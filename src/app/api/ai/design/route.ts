@@ -1,116 +1,104 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { getImageProvider } from "@/lib/images/registry";
+import { randomUUID } from "crypto";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+/**
+ * Artwork generation API.
+ *
+ * Produces ONLY the print artwork (transparent), never a product mockup —
+ * the PVE composites it onto a real template later.
+ *
+ * Pipeline:
+ *   1. Build creative direction (brand-contextualised prompt).
+ *   2. getImageProvider() → Flux (real raster) if FAL_KEY, else Claude-SVG.
+ *   3. Re-host remote raster output to our bucket (stable + CORS-safe).
+ */
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { brandDNA, productName, productCategory, userDescription } = await req.json();
+  const palette = brandDNA?.palette || {};
+  const brandColors = [palette.primary, palette.secondary, palette.accent].filter(Boolean);
 
-  const palette = brandDNA.palette || {};
-  const primary = palette.primary || "#7c3aed";
-  const secondary = palette.secondary || "#4f46e5";
-  const accent = palette.accent || "#f59e0b";
-  const textColor = palette.text || "#111111";
-  const bgColor = palette.background || "#ffffff";
+  const userPrompt = (userDescription || "").trim();
+  const isSpecific = userPrompt.length >= 10;
 
-  // Step 1: Creative director pass — figure out WHAT to design based on full brand context
-  const conceptPass = await openrouter.chat.completions.create({
-    model: MODELS.smart,
-    messages: [{
-      role: "user",
-      content: `You are a creative director at a top D2C brand agency. A founder needs a print design for their product.
-
-BRAND BRIEF:
-- Brand name: ${brandDNA.name}
-- Tagline: ${brandDNA.tagline}
-- Story: ${brandDNA.story}
-- Niche: ${brandDNA.niche}
-- Target audience: ${brandDNA.target_audience}
-- Brand values: ${(brandDNA.brand_values || []).join(", ")}
-- Voice & tone: ${brandDNA.voice_tone}
-- Price positioning: ${brandDNA.price_tier}
-
-PRODUCT:
-- Type: ${productName} (${productCategory})
-- Founder's request: ${userDescription || "Create something that perfectly captures the brand"}
-
-YOUR TASK:
-Write a specific visual design concept for this product's print. Include:
-1. The central visual element or illustration (be very specific — not "an animal" but "a bold linework fox mid-leap, viewed from the side")
-2. Supporting elements (patterns, shapes, text, background texture)
-3. Composition layout (where each element sits in the 800x800 canvas)
-4. Typography — any words/slogans and what font style they should have
-5. Color application — which brand colors go where
-
-Be opinionated. This should feel like it was designed specifically for ${brandDNA.target_audience} who love ${brandDNA.niche}. Max 200 words.`,
-    }],
-    max_tokens: 400,
-    temperature: 0.9,
-  });
-
-  const visualConcept = conceptPass.choices[0].message.content || "";
-
-  // Step 2: Execute the concept as SVG
-  const svgPass = await openrouter.chat.completions.create({
-    model: MODELS.smart,
-    messages: [
-      {
-        role: "user",
-        content: `You are a professional SVG developer and graphic designer. Build this design as a complete, detailed SVG.
-
-VISUAL CONCEPT:
-${visualConcept}
-
-BRAND COLORS (use these exactly):
-- Primary: ${primary}
-- Secondary: ${secondary}
-- Accent: ${accent}
-- Text: ${textColor}
-- Background: ${bgColor}
-
-BRAND: ${brandDNA.name} | ${brandDNA.tagline}
-
-TECHNICAL RULES:
-- Output ONLY raw SVG code — no markdown fences, no explanation, nothing else
-- First line must be: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
-- Last line must be: </svg>
-- Include a background rect as the first element
-- Use SVG paths, circles, rects, polygons, text, and groups — make it detailed (20+ elements)
-- For text: use font-family="Arial, sans-serif" or font-family="Georgia, serif" depending on brand tone
-- All shapes must be fully formed with correct SVG syntax
-- Center the design visually within the 800x800 canvas
-- The design must feel like it belongs on a real ${productName} sold to ${brandDNA.target_audience}`,
-      }
-    ],
-    max_tokens: 4000,
-    temperature: 0.5,
-  });
-
-  const raw = svgPass.choices[0].message.content || "";
-
-  // Extract SVG — handle both bare SVG and markdown-wrapped
-  let svg = "";
-  const fenced = raw.match(/```(?:svg|xml)?\s*\n([\s\S]*?)\n```/i);
-  if (fenced) {
-    svg = fenced[1].trim();
+  // ── 1) Creative direction ──
+  let concept: string;
+  if (isSpecific) {
+    // Honor the user's exact request; brand only informs styling.
+    concept = `Design for a ${productName}: ${userPrompt}. Brand vibe: ${brandDNA.niche}, ${brandDNA.voice_tone}.`;
   } else {
-    const direct = raw.match(/<svg[\s\S]*<\/svg>/i);
-    if (direct) svg = direct[0];
+    const conceptPass = await openrouter.chat.completions.create({
+      model: MODELS.smart,
+      messages: [{
+        role: "user",
+        content: `You are a creative director. Describe ARTWORK to print on a ${productName} for this brand:
+- Brand: ${brandDNA.name} · ${brandDNA.niche}
+- Audience: ${brandDNA.target_audience}
+- Voice: ${brandDNA.voice_tone}
+Give one specific, vivid design concept (central subject, style, composition). Max 60 words. No preamble.`,
+      }],
+      max_tokens: 180,
+      temperature: 0.9,
+    });
+    concept = conceptPass.choices[0].message.content?.trim() || `A design that captures ${brandDNA.name}`;
   }
 
-  if (!svg) {
-    return NextResponse.json({ url: null, svg: null, concept: visualConcept, error: "SVG generation failed" });
+  // ── 2) Generate via the active image provider ──
+  const provider = getImageProvider();
+  const needsTransparency = ["Apparel", "Accessories"].includes(productCategory);
+
+  let artwork;
+  try {
+    artwork = await provider.generateArtwork({
+      prompt: concept,
+      brandColors,
+      transparent: needsTransparency,
+    });
+  } catch (err) {
+    console.error("[ai/design] provider failed:", err);
+    return NextResponse.json(
+      { url: null, concept, error: err instanceof Error ? err.message : "Artwork generation failed" },
+      { status: 200 }
+    );
   }
 
-  const dataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  // ── 3) Stabilise the asset URL ──
+  // SVG data URIs are small & stable → return as-is. Remote raster (Flux) is
+  // re-hosted to our bucket so it survives provider URL expiry and is CORS-safe
+  // for the browser placement preview.
+  let finalUrl = artwork.url;
+  if (artwork.format === "png" && artwork.url.startsWith("http")) {
+    try {
+      const buf = Buffer.from(await (await fetch(artwork.url)).arrayBuffer());
+      const svc = createServiceClient();
+      const path = `_artwork/${user.id.slice(0, 8)}-${randomUUID().slice(0, 8)}.png`;
+      const { error } = await svc.storage.from("product-assets").upload(path, buf, {
+        contentType: "image/png", upsert: true, cacheControl: "31536000",
+      });
+      if (!error) {
+        finalUrl = svc.storage.from("product-assets").getPublicUrl(path).data.publicUrl;
+      }
+    } catch (err) {
+      console.warn("[ai/design] re-host failed, using provider url:", err);
+    }
+  }
 
   return NextResponse.json({
-    url: dataUri,
-    svg,
-    concept: visualConcept,
-    prompt: userDescription || "AI-generated brand design",
+    url: finalUrl,
+    artwork_url: finalUrl,
+    concept,
+    prompt: userPrompt || concept,
+    provider: artwork.provider,
+    format: artwork.format,
   });
 }

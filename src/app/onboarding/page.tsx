@@ -15,8 +15,14 @@ export default function OnboardingPage() {
   const [savingBrand, setSavingBrand] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const initialised = useRef(false);
 
-  useEffect(() => { sendToAI([]); }, []);
+  // Guard against React Strict Mode double-invocation in dev — otherwise we get two greetings.
+  useEffect(() => {
+    if (initialised.current) return;
+    initialised.current = true;
+    sendToAI([]);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -35,7 +41,7 @@ export default function OnboardingPage() {
         setBrandDraft(data.brand);
         setMessages(prev => [...prev, {
           role: "assistant",
-          content: `Perfect. I've built your complete brand — **${data.brand.name}**. Here's what I created.`,
+          content: `Here's **${data.brand.name}**. Take a look — you can launch it as-is, or we can keep iterating.`,
         }]);
       } else {
         setMessages(prev => [...prev, { role: "assistant", content: data.content }]);
@@ -70,6 +76,7 @@ export default function OnboardingPage() {
       const brand = await res.json();
       if (brand.error) throw new Error(brand.error);
 
+      // Fire-and-forget: logo + full Brand Book.
       fetch("/api/ai/logo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,6 +84,13 @@ export default function OnboardingPage() {
       }).then(r => r.json()).then(({ url }) => {
         if (url) fetch(`/api/brands/${brand.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logo_url: url }) });
       });
+
+      // Background: generate the full Brand Book — takes 15-45s.
+      fetch("/api/ai/brand-book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandId: brand.id }),
+      }).catch(err => console.warn("Brand book generation kicked off but errored:", err));
 
       toast.success("Brand launched! 🎉");
       router.push(`/dashboard/${brand.id}`);

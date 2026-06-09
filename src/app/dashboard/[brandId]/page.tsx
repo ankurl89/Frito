@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { BrandDNA, Order, Product } from "@/lib/types";
-import { Package, ShoppingBag, TrendingUp, ArrowRight, Plus } from "lucide-react";
+import { BrandDNA, Order } from "@/lib/types";
+import { Package, ShoppingBag, TrendingUp, ArrowRight, Plus, ExternalLink } from "lucide-react";
+import FounderStatus from "@/components/FounderStatus";
+import FirstSaleCelebration from "@/components/FirstSaleCelebration";
+import { ORDER_STATUS_META } from "@/lib/orders/states";
 
 export default async function BrandOverviewPage({ params }: { params: Promise<{ brandId: string }> }) {
   const { brandId } = await params;
@@ -25,6 +28,9 @@ export default async function BrandOverviewPage({ params }: { params: Promise<{ 
 
   return (
     <div className="p-8">
+      <FirstSaleCelebration />
+      <FounderStatus />
+
       {/* Brand header */}
       <div className="mb-10">
         <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-3">/ BRAND OVERVIEW /</p>
@@ -44,14 +50,24 @@ export default async function BrandOverviewPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* Palette + badges */}
-        <div className="flex items-center gap-3">
+        {/* Palette + badges + view store */}
+        <div className="flex items-center gap-3 flex-wrap">
           {palette && Object.values(palette).slice(0, 5).map((color, i) => (
             <div key={i} className="w-5 h-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color as string }} />
           ))}
           <span className="font-mono text-[9px] tracking-wider border border-zinc-300 text-zinc-500 px-2 py-0.5 rounded uppercase ml-1">{b.niche}</span>
           <span className="font-mono text-[9px] tracking-wider border border-zinc-300 text-zinc-500 px-2 py-0.5 rounded uppercase">{b.price_tier}</span>
           <span className="font-mono text-[9px] tracking-wider bg-green-100 border border-green-200 text-green-700 px-2 py-0.5 rounded uppercase">LIVE</span>
+          {(b as { slug?: string }).slug && (
+            <a
+              href={`/store/${(b as { slug?: string }).slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="ml-auto inline-flex items-center gap-1.5 text-xs font-bold bg-zinc-900 text-white px-3 py-1.5 rounded-lg hover:bg-violet-600 transition-colors"
+            >
+              View store <ExternalLink size={11} />
+            </a>
+          )}
         </div>
       </div>
 
@@ -177,16 +193,7 @@ export default async function BrandOverviewPage({ params }: { params: Promise<{ 
 }
 
 function OrderStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: "PENDING", cls: "border-zinc-300 text-zinc-500" },
-    confirmed: { label: "CONFIRMED", cls: "border-blue-300 text-blue-600" },
-    in_production: { label: "IN PROD", cls: "border-blue-300 text-blue-600" },
-    ready_to_ship: { label: "READY", cls: "border-yellow-400 text-yellow-700" },
-    shipped: { label: "SHIPPED", cls: "border-yellow-400 text-yellow-700" },
-    delivered: { label: "DELIVERED", cls: "border-green-300 text-green-600" },
-    cancelled: { label: "CANCELLED", cls: "border-red-300 text-red-500" },
-  };
-  const s = map[status] || { label: status.toUpperCase(), cls: "border-zinc-300 text-zinc-400" };
+  const s = ORDER_STATUS_META[status] || { label: status.toUpperCase(), cls: "border-zinc-300 text-zinc-400" };
   return (
     <span className={`font-mono text-[9px] tracking-wider border rounded px-1.5 py-0.5 ${s.cls}`}>{s.label}</span>
   );

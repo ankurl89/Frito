@@ -5,23 +5,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandDNA } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, Plus, LogOut, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar } from "lucide-react";
 import { useState } from "react";
+import DevWorkerTicker from "@/components/DevWorkerTicker";
 
 interface Props {
   brand: BrandDNA;
   allBrands: BrandDNA[];
   children: React.ReactNode;
+  isStaff?: boolean;
 }
 
 const navItems = (brandId: string) => [
   { label: "OVERVIEW", href: `/dashboard/${brandId}`, icon: LayoutDashboard },
+  { label: "BRAND BOOK", href: `/dashboard/${brandId}/brand`, icon: BookOpen },
   { label: "PRODUCTS", href: `/dashboard/${brandId}/products`, icon: Package },
   { label: "ORDERS", href: `/dashboard/${brandId}/orders`, icon: ShoppingBag },
   { label: "ANALYTICS", href: `/dashboard/${brandId}/analytics`, icon: BarChart2 },
 ];
 
-export default function DashboardShell({ brand, allBrands, children }: Props) {
+export default function DashboardShell({ brand, allBrands, children, isStaff }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [brandMenuOpen, setBrandMenuOpen] = useState(false);
@@ -37,6 +40,7 @@ export default function DashboardShell({ brand, allBrands, children }: Props) {
 
   return (
     <div className="flex h-screen bg-[#F5F5F0] overflow-hidden">
+      <DevWorkerTicker />
       {/* Sidebar — dark */}
       <aside className="w-56 bg-zinc-900 flex flex-col flex-shrink-0">
         {/* Logo */}
@@ -118,7 +122,16 @@ export default function DashboardShell({ brand, allBrands, children }: Props) {
         </nav>
 
         {/* Bottom */}
-        <div className="px-3 py-4 border-t border-zinc-800">
+        <div className="px-3 py-4 border-t border-zinc-800 space-y-0.5">
+          {isStaff && (
+            <Link
+              href="/mission-control"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-violet-300 hover:bg-violet-600/20 transition-colors"
+            >
+              <Radar size={14} />
+              <span className="font-mono text-[11px] tracking-widest">MISSION CONTROL</span>
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"

@@ -2,17 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Order } from "@/lib/types";
 import { ShoppingBag } from "lucide-react";
-
-const STATUS: Record<string, { label: string; cls: string }> = {
-  pending:         { label: "PENDING",     cls: "border-zinc-300 text-zinc-500 bg-zinc-50" },
-  confirmed:       { label: "CONFIRMED",   cls: "border-blue-300 text-blue-600 bg-blue-50" },
-  in_production:   { label: "IN PROD",     cls: "border-blue-300 text-blue-600 bg-blue-50" },
-  ready_to_ship:   { label: "READY",       cls: "border-yellow-400 text-yellow-700 bg-yellow-50" },
-  shipped:         { label: "SHIPPED",     cls: "border-yellow-400 text-yellow-700 bg-yellow-50" },
-  delivered:       { label: "DELIVERED",   cls: "border-green-300 text-green-700 bg-green-50" },
-  cancelled:       { label: "CANCELLED",   cls: "border-red-300 text-red-600 bg-red-50" },
-  refund_requested:{ label: "REFUND",      cls: "border-red-300 text-red-600 bg-red-50" },
-};
+import { ORDER_STATUS_META as STATUS } from "@/lib/orders/states";
 
 export default async function OrdersPage({ params }: { params: Promise<{ brandId: string }> }) {
   const { brandId } = await params;

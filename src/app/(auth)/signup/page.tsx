@@ -26,6 +26,8 @@ export default function SignupPage() {
       toast.error(error.message);
       setLoading(false);
     } else {
+      // Award account-created XP on the server.
+      fetch("/api/founder/award-signup", { method: "POST" }).catch(() => {});
       toast.success("Account created! Let's build your brand.");
       router.push("/onboarding");
     }

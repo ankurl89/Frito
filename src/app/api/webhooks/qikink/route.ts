@@ -1,41 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { getProvider } from "@/lib/fulfillment/registry";
+import { transition } from "@/lib/orders/state-machine";
 
-// Qikink sends webhooks when order status changes
-// Register this URL in your Qikink dashboard: https://yourdomain.com/api/webhooks/qikink
+/**
+ * Qikink fulfillment webhook — now provider-agnostic in structure.
+ *
+ * The handler does NOT know Qikink's status vocabulary. It:
+ *   1. verifies the webhook signature via the adapter
+ *   2. normalizes the payload to a canonical event via the adapter
+ *   3. resolves the platform order from provider_order_id
+ *   4. applies the transition through the state machine (audited, idempotent)
+ *
+ * Swapping or adding a provider needs no change here.
+ */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { production_id, status, tracking_number, courier } = body;
+    const rawBody = await req.text();
+    const headers: Record<string, string> = {};
+    req.headers.forEach((v, k) => { headers[k] = v; });
 
-    if (!production_id) {
-      return NextResponse.json({ error: "Missing production_id" }, { status: 400 });
+    const provider = getProvider("qikink");
+
+    // 1. Verify authenticity.
+    if (!provider.verifyWebhook(headers, rawBody)) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    // 2. Normalize to canonical event.
+    const payload = JSON.parse(rawBody || "{}");
+    const event = provider.normalizeWebhook(payload);
+    if (!event) {
+      return NextResponse.json({ ignored: true });   // unrecognized status — ack
+    }
 
-    // Map Qikink status to our internal status
-    const statusMap: Record<string, string> = {
-      "Order Confirmed": "confirmed",
-      "In Production": "in_production",
-      "Ready to Ship": "ready_to_ship",
-      "Shipped": "shipped",
-      "Delivered": "delivered",
-      "Cancelled": "cancelled",
-    };
+    // 3. Resolve platform order.
+    const svc = createServiceClient();
+    const { data: fo } = await svc
+      .from("fulfillment_orders")
+      .select("order_id")
+      .eq("provider", "qikink")
+      .eq("provider_order_id", event.providerOrderId)
+      .maybeSingle();
 
-    const internalStatus = statusMap[status] || status.toLowerCase().replace(" ", "_");
+    if (!fo) {
+      // Unknown provider order — ack so the provider stops retrying.
+      return NextResponse.json({ ignored: true, reason: "order not found" });
+    }
 
-    const updateData: Record<string, unknown> = { status: internalStatus };
-    if (tracking_number) updateData.tracking_number = tracking_number;
-    if (courier) updateData.courier = courier;
+    // 4. Persist tracking + transition (idempotent for out-of-order delivery).
+    if (event.trackingNumber || event.courier) {
+      await svc.from("fulfillment_orders").update({
+        tracking_number: event.trackingNumber,
+        courier: event.courier,
+        tracking_url: event.trackingUrl,
+        updated_at: new Date().toISOString(),
+      }).eq("order_id", fo.order_id).eq("provider", "qikink");
 
-    const { error } = await supabase
-      .from("orders")
-      .update(updateData)
-      .eq("qikink_order_id", production_id);
+      await svc.from("orders").update({
+        tracking_number: event.trackingNumber,
+        courier: event.courier,
+      }).eq("id", fo.order_id);
+    }
 
-    if (error) throw error;
+    await transition(fo.order_id, event.toState, {
+      event: "provider_webhook",
+      actor: "provider:qikink",
+      metadata: { raw: event.raw },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
