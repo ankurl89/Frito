@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
+// Realistic Flux-generated product + lifestyle imagery (Supabase public bucket).
+const HOME_IMG = "https://pecaekbgmbuhssrwtclx.supabase.co/storage/v1/object/public/product-assets/_home";
+const TPL_IMG = "https://pecaekbgmbuhssrwtclx.supabase.co/storage/v1/object/public/product-assets/_templates";
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F0] font-sans">
@@ -127,18 +131,23 @@ function Hero() {
         {/* Product grid */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { name: "OVERSIZED HOODIE", price: "₹1,899", emoji: "🧥" },
-            { name: "GRAPHIC TEE", price: "₹899", emoji: "👕" },
-            { name: "CANVAS TOTE", price: "₹599", emoji: "👜" },
-            { name: "PHONE CASE", price: "₹499", emoji: "📱" },
+            { name: "OVERSIZED HOODIE", price: "₹1,899", img: `${HOME_IMG}/hero-hoodie.jpg` },
+            { name: "GRAPHIC TEE", price: "₹899", img: `${HOME_IMG}/hero-tee.jpg` },
+            { name: "CANVAS TOTE", price: "₹599", img: `${HOME_IMG}/hero-tote.jpg` },
+            { name: "CERAMIC MUG", price: "₹449", img: `${HOME_IMG}/hero-mug.jpg` },
           ].map(p => (
-            <div key={p.name} className="bg-white rounded-xl p-3 border border-zinc-200 shadow-sm relative">
-              <div className="absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-zinc-200 flex items-center justify-center">
+            <div key={p.name} className="bg-white rounded-xl border border-zinc-200 shadow-sm relative overflow-hidden">
+              <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-white/80 backdrop-blur border border-zinc-200 flex items-center justify-center">
                 <div className="w-2.5 h-2.5 rounded-full bg-zinc-900" />
               </div>
-              <div className="text-3xl mb-2 text-center">{p.emoji}</div>
-              <p className="text-[10px] font-black text-zinc-900 tracking-wide leading-tight">{p.name}</p>
-              <p className="text-xs text-zinc-500 mt-0.5">{p.price}</p>
+              <div className="aspect-square bg-zinc-50 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="p-2.5">
+                <p className="text-[10px] font-black text-zinc-900 tracking-wide leading-tight">{p.name}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{p.price}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -311,14 +320,14 @@ function AITeam() {
 /* ── BRAND WALL ── */
 function BrandWall() {
   const brands = [
-    { name: "RŌNIN", category: "ANIME STREETWEAR", tag: "STREETWEAR", emoji: "⛩️", bg: "bg-zinc-900", text: "text-white" },
-    { name: "Pulse Co.", category: "WOMEN'S ACTIVEWEAR", tag: "FITNESS", emoji: "💪", bg: "bg-pink-50", text: "text-zinc-900" },
-    { name: "Lone Print", category: "TYPOGRAPHIC POSTERS", tag: "ART", emoji: "🖼️", bg: "bg-amber-50", text: "text-zinc-900" },
-    { name: "Sal&Sage", category: "CLEAN SKINCARE", tag: "BEAUTY", emoji: "🌿", bg: "bg-emerald-50", text: "text-zinc-900" },
-    { name: "Slow Roast", category: "SPECIALTY COFFEE", tag: "F&B", emoji: "☕", bg: "bg-stone-100", text: "text-zinc-900" },
-    { name: "Houss", category: "PETS & HOME", tag: "PETS", emoji: "🐾", bg: "bg-blue-50", text: "text-zinc-900" },
-    { name: "Creator Co.", category: "CREATOR MERCH KIT", tag: "MERCH", emoji: "🎙️", bg: "bg-violet-50", text: "text-zinc-900" },
-    { name: "Futsl", category: "URBAN STREETWEAR", tag: "STREETWEAR", emoji: "🛹", bg: "bg-yellow-50", text: "text-zinc-900" },
+    { name: "RŌNIN", category: "ANIME STREETWEAR", tag: "STREETWEAR", img: `${HOME_IMG}/bw-anime.jpg` },
+    { name: "Pulse Co.", category: "WOMEN'S ACTIVEWEAR", tag: "FITNESS", img: `${HOME_IMG}/bw-fitness.jpg` },
+    { name: "Lone Print", category: "TYPOGRAPHIC POSTERS", tag: "ART", img: `${HOME_IMG}/bw-poster.jpg` },
+    { name: "Sal&Sage", category: "CLEAN SKINCARE", tag: "BEAUTY", img: `${HOME_IMG}/bw-skincare.jpg` },
+    { name: "Slow Roast", category: "SPECIALTY COFFEE", tag: "F&B", img: `${HOME_IMG}/bw-coffee.jpg` },
+    { name: "Houss", category: "PETS & HOME", tag: "PETS", img: `${HOME_IMG}/bw-pets.jpg` },
+    { name: "Creator Co.", category: "CREATOR MERCH KIT", tag: "MERCH", img: `${HOME_IMG}/bw-creator.jpg` },
+    { name: "Futsl", category: "URBAN STREETWEAR", tag: "STREETWEAR", img: `${HOME_IMG}/bw-streetwear.jpg` },
   ];
 
   return (
@@ -330,15 +339,19 @@ function BrandWall() {
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {brands.map((b, i) => (
-            <div key={i} className={`${b.bg} rounded-2xl p-5 aspect-square flex flex-col justify-between border border-zinc-200`}>
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-black tracking-wider text-zinc-500 border border-zinc-300 px-1.5 py-0.5 rounded bg-white/50">{b.tag}</span>
-                <span className="text-[10px] font-black tracking-wider border border-yellow-400 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">LIVE</span>
-              </div>
-              <div>
-                <div className="text-3xl mb-2">{b.emoji}</div>
-                <p className={`font-black text-base ${b.text}`}>{b.name}</p>
-                <p className="text-[10px] font-mono text-zinc-400 tracking-wider mt-0.5">{b.category}</p>
+            <div key={i} className="relative rounded-2xl aspect-square overflow-hidden border border-zinc-200 group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={b.img} alt={b.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
+              <div className="relative h-full flex flex-col justify-between p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-black tracking-wider text-white border border-white/40 px-1.5 py-0.5 rounded bg-black/30 backdrop-blur">{b.tag}</span>
+                  <span className="text-[10px] font-black tracking-wider border border-yellow-300/60 bg-yellow-400/90 text-zinc-900 px-1.5 py-0.5 rounded">LIVE</span>
+                </div>
+                <div>
+                  <p className="font-black text-lg text-white">{b.name}</p>
+                  <p className="text-[10px] font-mono text-white/70 tracking-wider mt-0.5">{b.category}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -351,12 +364,12 @@ function BrandWall() {
 /* ── CATALOG ── */
 function Catalog() {
   const products = [
-    { category: "Apparel", name: "Premium Cotton Tee", cost: 240, sell: 799, margin: 70, emoji: "👕" },
-    { category: "Apparel", name: "Heavy Hoodie", cost: 580, sell: 1799, margin: 68, emoji: "🧥" },
-    { category: "Mugs", name: "Ceramic Mug", cost: 110, sell: 449, margin: 76, emoji: "☕" },
-    { category: "Accessories", name: "Canvas Tote Bag", cost: 180, sell: 599, margin: 70, emoji: "👜" },
-    { category: "Accessories", name: "Phone Case", cost: 150, sell: 549, margin: 73, emoji: "📱" },
-    { category: "Posters", name: "Art Print A3", cost: 80, sell: 349, margin: 77, emoji: "🖼️" },
+    { category: "Apparel", name: "Premium Cotton Tee", cost: 240, sell: 799, margin: 70, img: `${TPL_IMG}/tshirt.png` },
+    { category: "Apparel", name: "Heavy Hoodie", cost: 580, sell: 1799, margin: 68, img: `${TPL_IMG}/hoodie.png` },
+    { category: "Mugs", name: "Ceramic Mug", cost: 110, sell: 449, margin: 76, img: `${TPL_IMG}/mug.png` },
+    { category: "Accessories", name: "Canvas Tote Bag", cost: 180, sell: 599, margin: 70, img: `${TPL_IMG}/tote.png` },
+    { category: "Accessories", name: "Phone Case", cost: 150, sell: 549, margin: 73, img: `${TPL_IMG}/phonecase.png` },
+    { category: "Posters", name: "Art Print A3", cost: 80, sell: 349, margin: 77, img: `${TPL_IMG}/poster.png` },
   ];
 
   return (
@@ -379,8 +392,9 @@ function Catalog() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {products.map(p => (
             <div key={p.name} className="border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
-              <div className="bg-zinc-50 p-8 flex items-center justify-center text-5xl aspect-square">
-                {p.emoji}
+              <div className="bg-zinc-50 aspect-square overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
               </div>
               <div className="p-5">
                 <p className="text-xs text-zinc-400 mb-1">{p.category}</p>
