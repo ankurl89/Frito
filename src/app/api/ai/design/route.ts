@@ -3,6 +3,7 @@ import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getImageProvider } from "@/lib/images/registry";
+import { guardAi } from "@/lib/guardrails/guard";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Guardrail: image generation is the real-money path (Flux).
+  const guard = await guardAi(user.id, "ai_image");
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: 429 });
 
   const { brandDNA, productName, productCategory, userDescription } = await req.json();
   const palette = brandDNA?.palette || {};

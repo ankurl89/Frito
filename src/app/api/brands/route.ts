@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { awardXP } from "@/lib/founder-engine";
+import { brandLimit } from "@/lib/guardrails/guard";
 
 export async function GET() {
   const supabase = await createClient();
@@ -21,6 +22,18 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Plan cap: enforce max brands per account.
+  const [{ count: brandCount }, max] = await Promise.all([
+    supabase.from("brands").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    brandLimit(user.id),
+  ]);
+  if ((brandCount ?? 0) >= max) {
+    return NextResponse.json(
+      { error: `Your plan allows ${max} brand${max === 1 ? "" : "s"}. Upgrade to create more.` },
+      { status: 403 }
+    );
+  }
 
   const body = await req.json();
 

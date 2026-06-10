@@ -142,6 +142,20 @@ Every storefront component uses these vars exclusively for colors/fonts — so e
 
 The owner-facing dashboard has a **"View store →"** link on the brand overview that opens the storefront in a new tab.
 
+### Cost Guardrails (rate limiting + plan quotas)
+
+Protects platform spend (Flux/OpenRouter) and enforces plan tiers. Postgres-native (no Redis) so limits are correct across serverless instances.
+
+- `rate_limits` table + `bump_rate(bucket, window)` RPC — atomic increment-and-return; one round trip per check.
+- `src/lib/guardrails/limits.ts` — `PLAN_LIMITS` per tier (free/growth/scale): `aiPerMin`, `aiPerDay`, `aiImagePerDay`, `brands`, `productsPerDay`. `profiles.plan` drives it (new signups = free; existing dev accounts seeded to scale).
+- `src/lib/guardrails/guard.ts`:
+  - `guardAi(userId, "ai" | "ai_image")` — per-minute burst + daily cap by kind. Image generation (Flux, real $) has its own tighter `ai_image` cap. **Fails open** if the limiter itself errors (never block legit users on a limiter hiccup).
+  - `guardBurst(key, perMin)` — used on `/api/pve/render` (storage/bandwidth spam).
+  - `guardIp(ip, scope, perMin)` — used on public `/api/store/orders` checkout.
+  - `brandLimit(userId)` — enforced in `POST /api/brands`.
+
+Every AI route (`onboard`, `brand`, `brand-book`, `listing`, `logo`, `design`) calls a guard right after auth and returns **429** with a friendly message when exceeded. When adding a new AI/image/storage endpoint, wrap it the same way.
+
 ### Founder Progression (Gamification)
 
 The product is framed as a founder game — every meaningful action awards XP, contributes to a streak, and may unlock achievements.

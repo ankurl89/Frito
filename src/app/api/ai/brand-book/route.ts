@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
 import { awardXP } from "@/lib/founder-engine";
+import { guardAi } from "@/lib/guardrails/guard";
 
 /**
  * POST /api/ai/brand-book
@@ -21,6 +22,9 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const guard = await guardAi(user.id, "ai");
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: 429 });
 
   const { brandId } = await req.json();
   if (!brandId) return NextResponse.json({ error: "brandId required" }, { status: 400 });

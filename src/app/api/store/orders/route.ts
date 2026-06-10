@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { awardXP, checkRevenueMilestones } from "@/lib/founder-engine";
 import { recordCreation, transition } from "@/lib/orders/state-machine";
 import { enqueue, kickWorker } from "@/lib/queue/job-queue";
+import { guardIp } from "@/lib/guardrails/guard";
 
 /**
  * POST /api/store/orders — customer checkout.
@@ -19,6 +20,12 @@ import { enqueue, kickWorker } from "@/lib/queue/job-queue";
  * Fulfillment Engine's job, off the checkout hot path, with retries.
  */
 export async function POST(req: NextRequest) {
+  // IP rate limit — public endpoint; stops checkout/order spam.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  if (!(await guardIp(ip, "checkout", 12))) {
+    return NextResponse.json({ error: "Too many requests. Please wait a moment." }, { status: 429 });
+  }
+
   const body = await req.json();
   const { brand_slug, customer_name, customer_email, customer_phone, shipping_address, items } = body;
   const idempotencyKey = req.headers.get("idempotency-key");

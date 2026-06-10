@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
+import { guardAi } from "@/lib/guardrails/guard";
 
 const SYSTEM_PROMPT = `You are Frito — a brand strategist helping a founder build a real D2C brand. You're talking to a real human, one on one.
 
@@ -62,6 +63,9 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const guard = await guardAi(user.id, "ai");
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: 429 });
 
   const { messages } = await req.json();
 

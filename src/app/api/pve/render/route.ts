@@ -6,6 +6,7 @@ import { render } from "@/lib/pve/renderer";
 import { validateArtwork } from "@/lib/pve/validation";
 import { computeScore } from "@/lib/pve/score";
 import { getVisualizationProfile } from "@/lib/pve/profiles";
+import { guardBurst } from "@/lib/guardrails/guard";
 
 export const runtime = "nodejs";        // Sharp needs the Node runtime
 export const maxDuration = 60;
@@ -25,6 +26,11 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Burst guard — rendering uploads several large PNGs (storage + bandwidth).
+  if (!(await guardBurst(`render:${user.id}`, 20))) {
+    return NextResponse.json({ error: "Too many renders in a short window — give it a moment." }, { status: 429 });
+  }
 
   const { productTemplateId, artwork, placement, brandPalette, productId } = await req.json();
   const template = getTemplate(productTemplateId);
