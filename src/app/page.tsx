@@ -277,10 +277,10 @@ function HowItWorks() {
 /* ── AI TEAM ── */
 function AITeam() {
   const agents = [
-    { name: "Maya", role: "BRAND STRATEGIST", tag: "BRAND", status: "Crafting voice for your brand…", color: "bg-violet-600", emoji: "🧠" },
-    { name: "Leo", role: "DESIGN LEAD", tag: "DESIGN", status: "Rendering product graphic v3…", color: "bg-orange-500", emoji: "🎨" },
-    { name: "Zara", role: "GROWTH AGENT", tag: "GROWTH", status: "Analysing top-selling niches…", color: "bg-green-500", emoji: "📈" },
-    { name: "Dev", role: "FULFILLMENT OPS", tag: "OPS", status: "Routing order to production…", color: "bg-blue-500", emoji: "📦" },
+    { name: "Maya", role: "BRAND STRATEGIST", tag: "BRAND", status: "Crafting voice for your brand…", color: "bg-violet-600", img: `${HOME_IMG}/team-maya.jpg` },
+    { name: "Leo", role: "DESIGN LEAD", tag: "DESIGN", status: "Rendering product graphic v3…", color: "bg-orange-500", img: `${HOME_IMG}/team-leo.jpg` },
+    { name: "Zara", role: "GROWTH AGENT", tag: "GROWTH", status: "Analysing top-selling niches…", color: "bg-green-500", img: `${HOME_IMG}/team-zara.jpg` },
+    { name: "Dev", role: "FULFILLMENT OPS", tag: "OPS", status: "Routing order to production…", color: "bg-blue-500", img: `${HOME_IMG}/team-dev.jpg` },
   ];
 
   return (
@@ -297,7 +297,10 @@ function AITeam() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {agents.map((a, i) => (
             <div key={i} className="bg-zinc-800 border border-zinc-700 rounded-2xl p-5 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-zinc-700 flex items-center justify-center text-2xl flex-shrink-0">{a.emoji}</div>
+              <div className="w-14 h-14 rounded-full bg-zinc-700 overflow-hidden flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={a.img} alt={a.name} className="w-full h-full object-cover" />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="font-black text-white">{a.name}</p>
