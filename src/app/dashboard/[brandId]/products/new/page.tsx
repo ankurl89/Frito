@@ -503,7 +503,7 @@ export default function NewProductPage() {
                         className={`relative w-9 h-9 rounded-full border-2 transition-all ${on ? "border-zinc-900 scale-110" : "border-zinc-200 opacity-50 hover:opacity-100"}`}
                         style={{ backgroundColor: c.hex }}
                       >
-                        {on && <Check size={13} className={`absolute inset-0 m-auto ${["White", "Beige"].includes(c.name) ? "text-zinc-900" : "text-white"}`} />}
+                        {on && <Check size={13} className={`absolute inset-0 m-auto ${c.name === "White" ? "text-zinc-900" : "text-white"}`} />}
                       </button>
                     );
                   })}

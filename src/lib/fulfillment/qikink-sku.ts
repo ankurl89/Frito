@@ -3,7 +3,7 @@
  *
  * Qikink identifies a buyable variant by an SKU that encodes garment + color +
  * size, e.g. "MWGT-Wh-S". Our catalog uses internal ids (QK-001…) plus a color
- * name (Black/White/Beige/Navy) and a size. This module resolves
+ * name (Black/White/Navy/Maroon) and a size. This module resolves
  *   (our productId, color, size) → Qikink SKU
  * plus the placement and print-type parameters a Qikink order line needs.
  *
@@ -23,20 +23,27 @@
 import { ColorName, PlacementKey } from "@/lib/v1-commerce";
 import { SupportedProductId } from "@/lib/v1-commerce";
 
-/** Qikink garment code per OUR product id. TODO: fill from the SKU sheet. */
+/**
+ * Qikink garment code per OUR product id. Filled from the dashboard SKU sheet
+ * (sku_descriptions, 2026-06-11). Each maps to a real Qikink catalogue garment:
+ *   QK-001 → "Oversized Classic T-Shirt | UC22"
+ *   QK-011 → "Supima T-Shirt | UC23"
+ *   QK-002 → "Hoodie"
+ *   QK-012 → "Sweatshirt | UH26"
+ */
 const GARMENT_CODE: Record<string, string> = {
-  "QK-001": "",   // Oversized T-Shirt        — VERIFY/fill (e.g. "MOdTs")
-  "QK-011": "",   // Classic Unisex T-Shirt   — VERIFY/fill (e.g. "MRnTs")
-  "QK-002": "",   // Hoodie                   — VERIFY/fill (e.g. "MHood")
-  "QK-012": "",   // Sweatshirt               — VERIFY/fill (e.g. "MSwts")
+  "QK-001": "UOsMRnHs",  // Oversized Classic T-Shirt
+  "QK-011": "USuRnHs",   // Supima T-Shirt (premium unisex)
+  "QK-002": "UHd",       // Hoodie (standard unisex)
+  "QK-012": "USs",       // Sweatshirt
 };
 
-/** Qikink color code per OUR color name. TODO: fill from the SKU sheet. */
+/** Qikink color code per OUR color name (from the SKU sheet). */
 const COLOR_CODE: Record<ColorName, string> = {
-  Black: "",   // VERIFY/fill (e.g. "Bl")
-  White: "",   // VERIFY/fill (e.g. "Wh")
-  Beige: "",   // VERIFY/fill (e.g. "Be")
-  Navy:  "",   // VERIFY/fill (e.g. "Nv")
+  Black:  "Bk",
+  White:  "Wh",
+  Navy:   "Nb",   // Qikink lists this as "Navy Blue"
+  Maroon: "Mn",
 };
 
 /**
@@ -52,7 +59,7 @@ function composeSku(garment: string, color: string, size: string): string {
  * `${productId}|${color}|${size}`. Anything here wins over composeSku.
  */
 const SKU_OVERRIDES: Record<string, string> = {
-  // "QK-002|Beige|XXL": "MHood-Be-2XL",
+  // "QK-002|Maroon|XXL": "UHd-Mn-2XL",
 };
 
 /**

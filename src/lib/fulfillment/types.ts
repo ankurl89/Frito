@@ -26,7 +26,7 @@ export interface FulfillmentLineItem {
   catalogProductId: string;
   productName: string;
   size?: string;
-  /** Garment color name (Black/White/Beige/Navy). */
+  /** Garment color name (Black/White/Navy/Maroon). */
   color?: string;
   /** Named print placement (front_center / back_center / front_pocket / full_back). */
   placementKey?: string;

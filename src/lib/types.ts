@@ -193,7 +193,7 @@ export interface Product {
     offset_y?: number;
   };
   /** Garment colors offered for this product (buyer picks one). */
-  colors?: ("Black" | "White" | "Beige" | "Navy")[];
+  colors?: ("Black" | "White" | "Navy" | "Maroon")[];
 
   sku: string;
   variants: ProductVariant[];

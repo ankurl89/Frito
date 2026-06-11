@@ -10,13 +10,16 @@
  */
 
 /* ── Colors ─────────────────────────────────────────────── */
-export type ColorName = "Black" | "White" | "Beige" | "Navy";
+// V1 colors are constrained to what Qikink stocks across ALL four garments.
+// Beige was dropped (Qikink has no Beige hoodie/sweatshirt); Maroon is the
+// universal premium 4th color.
+export type ColorName = "Black" | "White" | "Navy" | "Maroon";
 
 export const SUPPORTED_COLORS: { name: ColorName; hex: string }[] = [
-  { name: "Black", hex: "#1a1a1a" },
-  { name: "White", hex: "#f5f5f0" },
-  { name: "Beige", hex: "#d8ccb8" },
-  { name: "Navy",  hex: "#1e2a44" },
+  { name: "Black",  hex: "#1a1a1a" },
+  { name: "White",  hex: "#f5f5f0" },
+  { name: "Navy",   hex: "#1e2a44" },
+  { name: "Maroon", hex: "#6b2737" },
 ];
 
 export const SUPPORTED_COLOR_NAMES = SUPPORTED_COLORS.map(c => c.name);
@@ -71,7 +74,7 @@ export function isColorEnabled(name: string): boolean {
 export const AI_CONSTRAINTS = `
 FRITO V1 PRODUCT CONSTRAINTS (strict):
 - This is a PREMIUM APPAREL platform. Only these products exist: Oversized T-Shirt, Classic Unisex T-Shirt, Hoodie, Sweatshirt.
-- Available colors: Black, White, Beige, Navy.
+- Available colors: Black, White, Navy, Maroon.
 - Print placements: Front Center, Back Center, Front Pocket, Full Back.
 - NEVER recommend, design for, or reference any non-apparel product (no phone cases, mugs, tote bags, posters, stickers, jewelry, footwear, drinkware, furniture, or children's products).
 - All product recommendations must be one of the four apparel items above.

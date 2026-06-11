@@ -46,7 +46,10 @@ export interface ProductTemplate {
   placements: PlacementDef[];
 }
 
-const COLORS_ALL: ColorName[] = ["Black", "White", "Beige", "Navy"];
+// All four V1 colors are stocked on every chosen Qikink garment.
+// base_price = Qikink garment base cost (INR). Print + shipping are billed on
+// top at fulfillment; treat margins as garment-only until those are wired.
+const COLORS_ALL: ColorName[] = ["Black", "White", "Navy", "Maroon"];
 
 // Reusable placement sets (normalised on the square 1024 templates).
 function teePlacements(): PlacementDef[] {
@@ -72,7 +75,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-001",
     name: "Oversized T-Shirt",
     category: "Apparel",
-    base_price: 349,
+    base_price: 265,
     material: "240 GSM combed cotton",
     description: "Heavyweight oversized fit. Drop shoulder. Pre-shrunk.",
     difficulty: "Easy", popularity: "High", margin_pct: 70, production_days: "3–5 days",
@@ -88,9 +91,9 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-011",
     name: "Classic Unisex T-Shirt",
     category: "Apparel",
-    base_price: 299,
-    material: "180 GSM ringspun cotton",
-    description: "Regular unisex fit. Soft, everyday tee. The easiest first product.",
+    base_price: 300,
+    material: "Premium Supima cotton",
+    description: "Regular unisex fit in premium Supima cotton. The easiest first product.",
     difficulty: "Easy", popularity: "High", margin_pct: 72, production_days: "3–5 days",
     available_sizes: ["XS", "S", "M", "L", "XL", "XXL"],
     available_colors: COLORS_ALL,
@@ -104,7 +107,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-002",
     name: "Hoodie",
     category: "Apparel",
-    base_price: 649,
+    base_price: 490,
     material: "320 GSM fleece-lined cotton blend",
     description: "Premium pullover hoodie. Kangaroo pocket. Heavyweight fleece.",
     difficulty: "Medium", popularity: "High", margin_pct: 65, production_days: "4–6 days",
@@ -120,7 +123,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-012",
     name: "Sweatshirt",
     category: "Apparel",
-    base_price: 549,
+    base_price: 390,
     material: "300 GSM fleece-lined cotton blend",
     description: "Classic crewneck sweatshirt. Cozy, structured, premium feel.",
     difficulty: "Medium", popularity: "Medium", margin_pct: 66, production_days: "4–6 days",

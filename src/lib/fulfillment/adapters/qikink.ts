@@ -21,6 +21,7 @@ import {
 // Qikink status string → canonical order state. Covers both production statuses
 // and post-dispatch shipping statuses. VERIFY exact strings against the sandbox.
 const STATUS_MAP: Record<string, OrderState> = {
+  "on hold": "submitted_to_provider",        // new order, awaiting confirmation (seen in sandbox)
   "order confirmed": "submitted_to_provider",
   "confirmed": "submitted_to_provider",
   "in production": "in_production",
@@ -75,8 +76,11 @@ export class QikinkAdapter implements FulfillmentProvider {
     // placement_sku, and print type from our neutral catalog identifiers.
     // Payload shape mirrors the documented Qikink "Create Order" request.
     const [firstName, ...restName] = (input.shippingAddress.name || "").trim().split(/\s+/);
+    // Qikink caps order_number at 15 chars; our ids are UUIDs. Derive a stable
+    // ≤15-char reference (deterministic → idempotent resubmits dedupe correctly).
+    const orderNumber = input.orderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 15);
     const body = {
-      order_number: input.orderId,
+      order_number: orderNumber,
       qikink_shipping: "1",
       gateway: "Prepaid",                       // Frito collects payment online
       total_order_value: String(input.totalOrderValue ?? 0),
@@ -151,6 +155,7 @@ export class QikinkAdapter implements FulfillmentProvider {
     return {
       state: STATUS_MAP[status],
       trackingNumber: shipping.awb ? String(shipping.awb) : undefined,
+      courier: shipping.courier_provider_name || undefined,
       trackingUrl: shipping.tracking_link,
       raw,
     };
