@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandDNA } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store } from "lucide-react";
 import { useState } from "react";
 import DevWorkerTicker from "@/components/DevWorkerTicker";
 
@@ -37,6 +37,7 @@ export default function DashboardShell({ brand, allBrands, children, isStaff }: 
 
   const palette = brand.palette as Record<string, string> | undefined;
   const primaryColor = palette?.primary || "#7c3aed";
+  const slug = (brand as { slug?: string }).slug;
 
   return (
     <div className="flex h-screen bg-[#F5F5F0] overflow-hidden">
@@ -98,6 +99,21 @@ export default function DashboardShell({ brand, allBrands, children, isStaff }: 
             </div>
           )}
         </div>
+
+        {/* Live store — always one click away */}
+        {slug && (
+          <div className="px-3 pt-3">
+            <a
+              href={`/store/${slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white text-zinc-900 font-bold text-sm hover:bg-violet-50 transition-colors"
+            >
+              <Store size={14} />
+              View Live Store
+            </a>
+          </div>
+        )}
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">

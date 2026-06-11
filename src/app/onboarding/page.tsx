@@ -15,7 +15,7 @@
  * background after launch.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrandDNA } from "@/lib/types";
@@ -23,7 +23,7 @@ import { V1_NICHES } from "@/lib/v1-commerce";
 import toast from "react-hot-toast";
 import {
   ArrowRight, Sparkles, Loader2, Check, TrendingUp, Target,
-  Zap, Package, Store, Trophy,
+  Zap, Package, Store, Trophy, Pencil,
 } from "lucide-react";
 
 type Stage = "dream" | "describe" | "building" | "reveal" | "launch";
@@ -48,6 +48,15 @@ export default function OnboardingWorkshop() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const brandIdRef = useRef<string | null>(null);
+
+  // Gate: if the account is already at its brand limit, don't let the user run
+  // the whole workshop just to hit a wall at launch — send them to upgrade.
+  useEffect(() => {
+    fetch("/api/account/usage")
+      .then(r => r.json())
+      .then(u => { if (u?.atLimit) router.replace("/dashboard/upgrade"); })
+      .catch(() => {});
+  }, [router]);
 
   const toggleNiche = (key: string) =>
     setNiches(n => (n.includes(key) ? n.filter(x => x !== key) : [...n, key]));
@@ -96,7 +105,15 @@ export default function OnboardingWorkshop() {
         }),
       });
       const brand = await res.json();
-      if (brand.error) throw new Error(brand.error);
+      if (brand.error) {
+        // Brand-limit / plan wall → send them somewhere they can act, not a toast.
+        if (res.status === 403 || /upgrade|plan allows/i.test(brand.error)) {
+          toast.error(brand.error);
+          router.push("/dashboard/upgrade");
+          return;
+        }
+        throw new Error(brand.error);
+      }
       brandIdRef.current = brand.id;
 
       // Background: full Brand Book.
@@ -148,7 +165,8 @@ export default function OnboardingWorkshop() {
           )}
           {stage === "building" && <BuildingStage key="building" />}
           {stage === "reveal" && result && (
-            <RevealStage key="reveal" result={result} logoUrl={logoUrl} saving={saving} onLaunch={launch} />
+            <RevealStage key="reveal" result={result} logoUrl={logoUrl} saving={saving} onLaunch={launch}
+              onChange={(patch) => setResult(r => (r ? { ...r, ...patch } : r))} />
           )}
           {stage === "launch" && result && (
             <LaunchStage key="launch" result={result} brandId={brandIdRef.current}
@@ -301,23 +319,39 @@ function BuildingStage() {
 }
 
 /* ── STEP 4: REVEAL ────────────────────────────────────────── */
-function RevealStage({ result, logoUrl, saving, onLaunch }: {
+function RevealStage({ result, logoUrl, saving, onLaunch, onChange }: {
   result: OnboardResult; logoUrl: string | null; saving: boolean; onLaunch: () => void;
+  onChange: (patch: Partial<OnboardResult>) => void;
 }) {
+  const [editing, setEditing] = useState(false);
   const palette = (result.palette || {}) as Record<string, string>;
   const primary = palette.primary || "#7c3aed";
+
+  const setPaletteKey = (key: string, value: string) =>
+    onChange({ palette: { ...palette, [key]: value } as OnboardResult["palette"] });
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -20 }}
       className="max-w-3xl mx-auto px-6 pt-12 pb-28"
     >
-      {/* Interpretation */}
-      {result.interpretation && (
-        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="text-center text-zinc-400 italic mb-8 text-lg">
-          &ldquo;{result.interpretation}&rdquo;
-        </motion.p>
-      )}
+      {/* Interpretation + edit toggle */}
+      <div className="flex items-center justify-center gap-3 mb-8">
+        {result.interpretation && !editing && (
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="text-center text-zinc-400 italic text-lg">
+            &ldquo;{result.interpretation}&rdquo;
+          </motion.p>
+        )}
+      </div>
+      <div className="flex justify-end mb-3">
+        <button
+          onClick={() => setEditing(e => !e)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors"
+        >
+          <Pencil size={12} /> {editing ? "Done editing" : "Edit details"}
+        </button>
+      </div>
 
       {/* Hero brand reveal */}
       <motion.div
@@ -341,27 +375,77 @@ function RevealStage({ result, logoUrl, saving, onLaunch }: {
               : <span className="text-white">{result.name?.[0]}</span>}
           </motion.div>
           <p className="font-mono text-[10px] tracking-widest text-zinc-500 mb-2">MEET YOUR BRAND</p>
-          <h1 className="text-5xl font-black tracking-tight mb-2">{result.name}</h1>
-          <p className="text-zinc-400 italic">&ldquo;{result.tagline}&rdquo;</p>
+          {editing ? (
+            <div className="space-y-2 max-w-md mx-auto">
+              <input
+                value={result.name || ""}
+                onChange={e => onChange({ name: e.target.value })}
+                className="w-full text-center text-3xl font-black tracking-tight bg-zinc-800/70 border border-zinc-700 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+              <input
+                value={result.tagline || ""}
+                onChange={e => onChange({ tagline: e.target.value })}
+                className="w-full text-center italic text-zinc-300 bg-zinc-800/70 border border-zinc-700 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+          ) : (
+            <>
+              <h1 className="text-5xl font-black tracking-tight mb-2">{result.name}</h1>
+              <p className="text-zinc-400 italic">&ldquo;{result.tagline}&rdquo;</p>
+            </>
+          )}
         </div>
       </motion.div>
 
       {/* Identity grid */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <InfoCard label="STORY" wide>{result.story}</InfoCard>
-        <InfoCard label="AUDIENCE">{result.target_audience}</InfoCard>
-        <InfoCard label="VOICE">{result.voice_tone}</InfoCard>
+        <InfoCard label="STORY" wide>
+          {editing
+            ? <EditArea value={result.story || ""} onChange={v => onChange({ story: v })} />
+            : result.story}
+        </InfoCard>
+        <InfoCard label="AUDIENCE">
+          {editing
+            ? <EditArea value={result.target_audience || ""} onChange={v => onChange({ target_audience: v })} />
+            : result.target_audience}
+        </InfoCard>
+        <InfoCard label="VOICE">
+          {editing
+            ? <EditArea value={result.voice_tone || ""} onChange={v => onChange({ voice_tone: v })} />
+            : result.voice_tone}
+        </InfoCard>
         <InfoCard label="VALUES">
-          <span className="flex flex-wrap gap-1.5">
-            {(result.brand_values || []).map(v => (
-              <span key={v} className="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full">{v}</span>
-            ))}
-          </span>
+          {editing ? (
+            <EditField
+              value={(result.brand_values || []).join(", ")}
+              onChange={v => onChange({ brand_values: v.split(",").map(s => s.trim()).filter(Boolean) })}
+              placeholder="comma, separated, values"
+            />
+          ) : (
+            <span className="flex flex-wrap gap-1.5">
+              {(result.brand_values || []).map(v => (
+                <span key={v} className="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full">{v}</span>
+              ))}
+            </span>
+          )}
         </InfoCard>
         <InfoCard label="PALETTE">
           <span className="flex gap-1.5">
-            {Object.values(palette).map((c, i) => <span key={i} className="w-6 h-6 rounded-full border border-zinc-700" style={{ backgroundColor: c }} />)}
+            {Object.entries(palette).slice(0, 5).map(([key, c]) => (
+              editing ? (
+                <input
+                  key={key}
+                  type="color"
+                  value={c}
+                  onChange={e => setPaletteKey(key, e.target.value)}
+                  className="w-6 h-6 rounded-full border border-zinc-700 bg-transparent cursor-pointer p-0"
+                  title={key}
+                />
+              ) : (
+                <span key={key} className="w-6 h-6 rounded-full border border-zinc-700" style={{ backgroundColor: c }} />
+              )
+            ))}
           </span>
         </InfoCard>
       </motion.div>
@@ -401,6 +485,26 @@ function RevealStage({ result, logoUrl, saving, onLaunch }: {
   );
 }
 
+function EditField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-zinc-800/70 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500"
+    />
+  );
+}
+function EditArea({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      rows={3}
+      className="w-full bg-zinc-800/70 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-200 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+    />
+  );
+}
 function InfoCard({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
   return (
     <div className={`bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 ${wide ? "md:col-span-3" : ""}`}>
