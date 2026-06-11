@@ -15,7 +15,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { BrandDNA, ColorPalette } from "@/lib/types";
-import { readableForeground } from "@/lib/color";
+import { readableForeground, ensureReadable } from "@/lib/color";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 
@@ -43,7 +43,12 @@ export default async function StorefrontLayout({
   const secondary = palette.secondary || "#4f46e5";
   const accent = palette.accent || "#f59e0b";
   const bg = palette.background || "#ffffff";
-  const text = palette.text || "#0a0a0a";
+  // Guarantee the body text actually reads on the background. A bad palette
+  // (e.g. light-on-light or white-on-white) would otherwise be invisible.
+  const text = ensureReadable(palette.text || "#0a0a0a", bg);
+  // Card surface: a subtle elevation off the background. Text inherits
+  // --brand-text, which is now contrast-safe against bg (and thus the surface).
+  const surface = `color-mix(in srgb, ${text} 4%, ${bg})`;
 
   // Compute readable foreground colors for each surface — so light brand
   // colors (e.g. cream/pastel) get dark text instead of invisible white.
@@ -56,6 +61,7 @@ export default async function StorefrontLayout({
     "--brand-accent-fg": readableForeground(accent),
     "--brand-bg": bg,
     "--brand-text": text,
+    "--brand-surface": surface,
     "--brand-headline-font": b.brand_book?.typography_detail?.headline_font || "Inter, system-ui, sans-serif",
     "--brand-body-font": b.brand_book?.typography_detail?.body_font || "Inter, system-ui, sans-serif",
   } as React.CSSProperties;

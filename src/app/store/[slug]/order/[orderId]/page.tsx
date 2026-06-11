@@ -47,7 +47,7 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
         <p className="opacity-70 mb-10">We&apos;ve sent a confirmation to <span className="font-bold">{order.customer_email}</span>.</p>
 
         {/* Status pipeline */}
-        <div className="bg-white rounded-2xl p-8 border mb-6" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
+        <div className="rounded-2xl p-8 border mb-6" style={{ backgroundColor: "var(--brand-surface)", borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
           <p className="font-mono text-[10px] tracking-widest opacity-60 mb-6">STATUS</p>
           {isCancelled ? (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -84,7 +84,7 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Summary */}
-        <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
+        <div className="rounded-2xl p-6 border" style={{ backgroundColor: "var(--brand-surface)", borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
           <p className="font-mono text-[10px] tracking-widest opacity-60 mb-4">ORDER SUMMARY</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">

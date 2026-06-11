@@ -32,3 +32,20 @@ export function luminance(hex: string): number {
 export function readableForeground(hex: string, darkText = "#0a0a0a", lightText = "#ffffff"): string {
   return luminance(hex) > 0.55 ? darkText : lightText;
 }
+
+/** WCAG contrast ratio between two colors (1 = identical, 21 = black/white). */
+export function contrastRatio(hex1: string, hex2: string): number {
+  const l1 = luminance(hex1);
+  const l2 = luminance(hex2);
+  const hi = Math.max(l1, l2);
+  const lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * Return `text` if it reads acceptably on `bg`, otherwise a guaranteed-readable
+ * fallback. Stops invisible white-on-white / low-contrast brand palettes.
+ */
+export function ensureReadable(text: string, bg: string, minRatio = 3): string {
+  return contrastRatio(text, bg) >= minRatio ? text : readableForeground(bg);
+}

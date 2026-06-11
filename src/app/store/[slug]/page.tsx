@@ -85,7 +85,7 @@ export default async function StorefrontHome({ params }: { params: Promise<{ slu
                 </div>
               )}
               {/* Floating "live" pill */}
-              <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur text-xs font-bold flex items-center gap-2">
+              <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur text-xs font-bold flex items-center gap-2 text-zinc-900">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 Store live
               </div>

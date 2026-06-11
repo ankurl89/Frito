@@ -47,7 +47,7 @@ export default function CartPage() {
             {/* Items */}
             <div className="lg:col-span-2 space-y-3">
               {cartItems.map(item => (
-                <div key={`${item.product_id}-${item.size}-${item.color}`} className="bg-white rounded-2xl p-4 flex gap-4 border" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
+                <div key={`${item.product_id}-${item.size}-${item.color}`} className="rounded-2xl p-4 flex gap-4 border" style={{ backgroundColor: "var(--brand-surface)", borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
                   <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--brand-text) 6%, transparent)" }}>
                     {item.image && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -81,7 +81,7 @@ export default function CartPage() {
 
             {/* Summary */}
             <div>
-              <div className="bg-white rounded-2xl p-6 border sticky top-24" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
+              <div className="rounded-2xl p-6 border sticky top-24" style={{ backgroundColor: "var(--brand-surface)", borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
                 <p className="font-mono text-[10px] tracking-widest opacity-60 mb-4">ORDER SUMMARY</p>
                 <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between">
