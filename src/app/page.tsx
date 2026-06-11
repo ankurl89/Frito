@@ -74,8 +74,8 @@ function Hero() {
       </h1>
 
       <p className="text-lg text-zinc-500 max-w-xl mx-auto mb-10">
-        Type one prompt. Get a brand, products, and a live store.<br />
-        Sell first. Make it real second.
+        Launch a premium apparel brand in minutes.<br />
+        Type one prompt — get a brand, your first drop, and a live store.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
@@ -133,8 +133,8 @@ function Hero() {
           {[
             { name: "OVERSIZED HOODIE", price: "₹1,899", img: `${HOME_IMG}/hero-hoodie.jpg` },
             { name: "GRAPHIC TEE", price: "₹899", img: `${HOME_IMG}/hero-tee.jpg` },
-            { name: "CANVAS TOTE", price: "₹599", img: `${HOME_IMG}/hero-tote.jpg` },
-            { name: "CERAMIC MUG", price: "₹449", img: `${HOME_IMG}/hero-mug.jpg` },
+            { name: "CREWNECK SWEATSHIRT", price: "₹1,499", img: `${TPL_IMG}/sweatshirt.png` },
+            { name: "CLASSIC TEE", price: "₹799", img: `${TPL_IMG}/tshirt.png` },
           ].map(p => (
             <div key={p.name} className="bg-white rounded-xl border border-zinc-200 shadow-sm relative overflow-hidden">
               <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-white/80 backdrop-blur border border-zinc-200 flex items-center justify-center">
@@ -176,14 +176,14 @@ function LiveCounter() {
         </div>
         <div className="bg-white border-2 border-zinc-900 rounded-2xl overflow-hidden shadow-lg">
           {[
-            { name: "Skincare Brand", location: "MUMBAI", time: "2 MIN AGO" },
+            { name: "Streetwear Hoodie Drop", location: "MUMBAI", time: "2 MIN AGO" },
             { name: "Gym Apparel Brand", location: "DELHI", time: "8 MIN AGO" },
             { name: "Anime Tee Drop", location: "BANGALORE", time: "15 MIN AGO" },
-            { name: "Home Decor Brand", location: "PUNE", time: "22 MIN AGO" },
+            { name: "Creator Merch Line", location: "PUNE", time: "22 MIN AGO" },
           ].map((b, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-zinc-100 last:border-0">
               <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-base flex-shrink-0">
-                {["🧴", "💪", "⛩️", "🌿"][i]}
+                {["🧥", "💪", "⛩️", "🎬"][i]}
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-sm text-zinc-900">{b.name} <span className="text-violet-600 font-semibold">created</span></p>
@@ -323,13 +323,13 @@ function AITeam() {
 /* ── BRAND WALL ── */
 function BrandWall() {
   const brands = [
-    { name: "RŌNIN", category: "ANIME STREETWEAR", tag: "STREETWEAR", img: `${HOME_IMG}/bw-anime.jpg` },
-    { name: "Pulse Co.", category: "WOMEN'S ACTIVEWEAR", tag: "FITNESS", img: `${HOME_IMG}/bw-fitness.jpg` },
-    { name: "Lone Print", category: "TYPOGRAPHIC POSTERS", tag: "ART", img: `${HOME_IMG}/bw-poster.jpg` },
-    { name: "Sal&Sage", category: "CLEAN SKINCARE", tag: "BEAUTY", img: `${HOME_IMG}/bw-skincare.jpg` },
-    { name: "Slow Roast", category: "SPECIALTY COFFEE", tag: "F&B", img: `${HOME_IMG}/bw-coffee.jpg` },
-    { name: "Houss", category: "PETS & HOME", tag: "PETS", img: `${HOME_IMG}/bw-pets.jpg` },
-    { name: "Creator Co.", category: "CREATOR MERCH KIT", tag: "MERCH", img: `${HOME_IMG}/bw-creator.jpg` },
+    { name: "RŌNIN", category: "ANIME APPAREL", tag: "ANIME", img: `${HOME_IMG}/bw-anime.jpg` },
+    { name: "Pulse Co.", category: "TRAINING APPAREL", tag: "FITNESS", img: `${HOME_IMG}/bw-fitness.jpg` },
+    { name: "Respawn", category: "GAMING APPAREL", tag: "GAMING", img: `${HOME_IMG}/bw-gaming.jpg` },
+    { name: "Northbound", category: "STARTUP MERCH", tag: "STARTUP", img: `${HOME_IMG}/bw-startup.jpg` },
+    { name: "Wildroot", category: "CAUSE-BASED TEES", tag: "CAUSE", img: `${HOME_IMG}/bw-cause.jpg` },
+    { name: "Kintsugi", category: "PREMIUM ANIME", tag: "ANIME", img: `${HOME_IMG}/bw-anime2.jpg` },
+    { name: "Creator Co.", category: "CREATOR MERCH", tag: "MERCH", img: `${HOME_IMG}/bw-creator.jpg` },
     { name: "Futsl", category: "URBAN STREETWEAR", tag: "STREETWEAR", img: `${HOME_IMG}/bw-streetwear.jpg` },
   ];
 
@@ -367,12 +367,10 @@ function BrandWall() {
 /* ── CATALOG ── */
 function Catalog() {
   const products = [
-    { category: "Apparel", name: "Premium Cotton Tee", cost: 240, sell: 799, margin: 70, img: `${TPL_IMG}/tshirt.png` },
-    { category: "Apparel", name: "Heavy Hoodie", cost: 580, sell: 1799, margin: 68, img: `${TPL_IMG}/hoodie.png` },
-    { category: "Mugs", name: "Ceramic Mug", cost: 110, sell: 449, margin: 76, img: `${TPL_IMG}/mug.png` },
-    { category: "Accessories", name: "Canvas Tote Bag", cost: 180, sell: 599, margin: 70, img: `${TPL_IMG}/tote.png` },
-    { category: "Accessories", name: "Phone Case", cost: 150, sell: 549, margin: 73, img: `${TPL_IMG}/phonecase.png` },
-    { category: "Posters", name: "Art Print A3", cost: 80, sell: 349, margin: 77, img: `${TPL_IMG}/poster.png` },
+    { category: "Apparel", name: "Oversized T-Shirt", cost: 349, sell: 999, margin: 65, img: `${TPL_IMG}/tshirt.png` },
+    { category: "Apparel", name: "Classic Unisex T-Shirt", cost: 299, sell: 799, margin: 63, img: `${TPL_IMG}/tshirt.png` },
+    { category: "Apparel", name: "Hoodie", cost: 649, sell: 1899, margin: 66, img: `${TPL_IMG}/hoodie.png` },
+    { category: "Apparel", name: "Sweatshirt", cost: 549, sell: 1499, margin: 63, img: `${TPL_IMG}/sweatshirt.png` },
   ];
 
   return (
@@ -381,18 +379,18 @@ function Catalog() {
         <p className="font-mono text-xs tracking-widest text-violet-600 mb-2">CATALOG</p>
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <h2 className="text-4xl md:text-5xl font-black text-zinc-900 leading-tight">
-            A catalog priced for profit.
+            Four products. Priced for profit.
           </h2>
-          <p className="text-zinc-500 max-w-xs">Real costs. Suggested prices. Estimated margin — visible on every product.</p>
+          <p className="text-zinc-500 max-w-xs">A focused premium apparel catalog. Real costs, suggested prices, and margin on every product.</p>
         </div>
         <div className="flex gap-2 mb-8 flex-wrap">
-          {["All", "Apparel", "Mugs", "Accessories", "Posters", "Tote Bags"].map(cat => (
-            <button key={cat} className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${cat === "All" ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"}`}>
+          {["Oversized Tee", "Classic Tee", "Hoodie", "Sweatshirt"].map((cat, i) => (
+            <button key={cat} className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${i === 0 ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"}`}>
               {cat}
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {products.map(p => (
             <div key={p.name} className="border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
               <div className="bg-zinc-50 aspect-square overflow-hidden">

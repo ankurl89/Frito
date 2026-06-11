@@ -185,10 +185,15 @@ export interface Product {
   mockup_url?: string;              // template + artwork composited (catalog image)
   production_file_url?: string;     // print-ready PNG at print DPI
   placement?: {
-    scale: number;
-    offset_x: number;
-    offset_y: number;
+    /** One of the 4 named placements (V1 catalog rule) — the starting box. */
+    key: "front_center" | "back_center" | "front_pocket" | "full_back";
+    /** Fine-tune within/around the placement box. Defaults: 1 / 0 / 0. */
+    scale?: number;
+    offset_x?: number;
+    offset_y?: number;
   };
+  /** Garment colors offered for this product (buyer picks one). */
+  colors?: ("Black" | "White" | "Beige" | "Navy")[];
 
   sku: string;
   variants: ProductVariant[];
@@ -298,4 +303,4 @@ export interface OnboardingState {
 }
 
 // Re-export the canonical template type from the catalog module.
-export type { ProductTemplate, TemplateView, PrintArea } from "./qikink-catalog";
+export type { ProductTemplate, ProductView, PlacementDef, PrintArea } from "./qikink-catalog";

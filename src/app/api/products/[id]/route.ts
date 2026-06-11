@@ -18,7 +18,8 @@ const EDIT_FIELDS = [
   "name", "description", "sell_price", "discount_price",
   "listing_title", "listing_description", "seo_tags", "tags",
   "url_slug", "meta_title", "meta_description",
-  "artwork_url", "design_url", "mockup_url", "production_file_url", "placement",
+  "artwork_url", "design_url", "mockup_url", "production_file_url", "placement", "template_view",
+  "colors", "variants",
   "status",
 ] as const;
 

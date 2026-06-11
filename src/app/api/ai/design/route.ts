@@ -3,6 +3,7 @@ import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getImageProvider } from "@/lib/images/registry";
+import { AI_CONSTRAINTS } from "@/lib/v1-commerce";
 import { guardAi } from "@/lib/guardrails/guard";
 import { randomUUID } from "crypto";
 
@@ -46,11 +47,13 @@ export async function POST(req: NextRequest) {
       model: MODELS.smart,
       messages: [{
         role: "user",
-        content: `You are a creative director. Describe ARTWORK to print on a ${productName} for this brand:
+        content: `${AI_CONSTRAINTS}
+
+You are a creative director. Describe ARTWORK (a flat graphic with a transparent background) to be screen-printed on a ${productName} for this brand:
 - Brand: ${brandDNA.name} · ${brandDNA.niche}
 - Audience: ${brandDNA.target_audience}
 - Voice: ${brandDNA.voice_tone}
-Give one specific, vivid design concept (central subject, style, composition). Max 60 words. No preamble.`,
+Give one specific, vivid design concept (central subject, style, composition). It is artwork only — never describe the garment itself, a mockup, or a person wearing it. Max 60 words. No preamble.`,
       }],
       max_tokens: 180,
       temperature: 0.9,

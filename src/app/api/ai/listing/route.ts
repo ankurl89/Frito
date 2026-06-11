@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
+import { AI_CONSTRAINTS } from "@/lib/v1-commerce";
 import { guardAi } from "@/lib/guardrails/guard";
 
 /**
@@ -37,7 +38,9 @@ BRAND BOOK MEMORY (reference for tone & voice)
     model: MODELS.fast,
     messages: [{
       role: "user",
-      content: `Generate a product listing for a D2C brand. Output ONLY valid JSON.
+      content: `${AI_CONSTRAINTS}
+
+Generate a product listing for a D2C apparel brand. Output ONLY valid JSON.
 
 BRAND
 - Name: ${brandDNA.name}

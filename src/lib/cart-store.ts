@@ -22,6 +22,7 @@ export interface CartItem {
   brand_slug: string;
   name: string;
   size?: string;
+  color?: string;
   price: number;
   image: string;
   quantity: number;
@@ -30,8 +31,8 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   add: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  setQuantity: (productId: string, size: string | undefined, quantity: number) => void;
-  remove: (productId: string, size: string | undefined) => void;
+  setQuantity: (productId: string, size: string | undefined, color: string | undefined, quantity: number) => void;
+  remove: (productId: string, size: string | undefined, color: string | undefined) => void;
   clear: () => void;
   subtotal: () => number;
 }
@@ -42,19 +43,19 @@ export const useCart = create<CartState>()(
       items: [],
       add: ({ quantity = 1, ...item }) => {
         const items = [...get().items];
-        const idx = items.findIndex(i => i.product_id === item.product_id && i.size === item.size);
+        const idx = items.findIndex(i => i.product_id === item.product_id && i.size === item.size && i.color === item.color);
         if (idx >= 0) items[idx].quantity += quantity;
         else items.push({ ...item, quantity });
         set({ items });
       },
-      setQuantity: (productId, size, quantity) => {
+      setQuantity: (productId, size, color, quantity) => {
         const items = get().items
-          .map(i => (i.product_id === productId && i.size === size ? { ...i, quantity } : i))
+          .map(i => (i.product_id === productId && i.size === size && i.color === color ? { ...i, quantity } : i))
           .filter(i => i.quantity > 0);
         set({ items });
       },
-      remove: (productId, size) => {
-        set({ items: get().items.filter(i => !(i.product_id === productId && i.size === size)) });
+      remove: (productId, size, color) => {
+        set({ items: get().items.filter(i => !(i.product_id === productId && i.size === size && i.color === color)) });
       },
       clear: () => set({ items: [] }),
       subtotal: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),

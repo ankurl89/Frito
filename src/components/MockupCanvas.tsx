@@ -34,6 +34,9 @@ interface Props {
   /** Optional placement offset within print area (px). */
   offsetX?: number;
   offsetY?: number;
+  /** Garment recolor: target hex + transparent cutout of the garment. */
+  garmentColor?: string;
+  cutoutUrl?: string;
   className?: string;
 }
 
@@ -47,6 +50,8 @@ const MockupCanvas = forwardRef<MockupCanvasHandle, Props>(function MockupCanvas
     scale = 1,
     offsetX = 0,
     offsetY = 0,
+    garmentColor,
+    cutoutUrl,
     className = "",
   },
   ref
@@ -89,6 +94,28 @@ const MockupCanvas = forwardRef<MockupCanvasHandle, Props>(function MockupCanvas
         ctx.fillStyle = "#f4f4f5";
         ctx.fillRect(0, 0, RENDER, RENDER);
         ctx.drawImage(template, tx, ty, tw, th);
+
+        // 1b. Garment recolor — multiply-tint a transparent cutout of the
+        //     garment and lay it back over the template (keeps bg + shadow).
+        const isWhite = !garmentColor || ["#f5f5f0", "#ffffff", "#fff"].includes(garmentColor.toLowerCase());
+        if (cutoutUrl && !isWhite) {
+          try {
+            const cut = await loadImage(cutoutUrl);
+            if (cancelled) return;
+            const off = document.createElement("canvas");
+            off.width = RENDER; off.height = RENDER;
+            const octx = off.getContext("2d");
+            if (octx) {
+              octx.drawImage(cut, tx, ty, tw, th);
+              octx.globalCompositeOperation = "multiply";
+              octx.fillStyle = garmentColor!;
+              octx.fillRect(tx, ty, tw, th);
+              octx.globalCompositeOperation = "destination-in";
+              octx.drawImage(cut, tx, ty, tw, th);
+              ctx.drawImage(off, 0, 0);
+            }
+          } catch { /* recolor is enhancement-only */ }
+        }
 
         // 2. Compute print area in canvas pixels (relative to template).
         const printX = tx + printArea.x * tw;
@@ -140,7 +167,7 @@ const MockupCanvas = forwardRef<MockupCanvasHandle, Props>(function MockupCanvas
 
     render();
     return () => { cancelled = true; };
-  }, [templateUrl, artworkUrl, printArea, scale, offsetX, offsetY, showPrintArea, RENDER]);
+  }, [templateUrl, artworkUrl, printArea, scale, offsetX, offsetY, garmentColor, cutoutUrl, showPrintArea, RENDER]);
 
   // Imperative export functions.
   useImperativeHandle(ref, () => ({

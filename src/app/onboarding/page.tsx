@@ -19,6 +19,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrandDNA } from "@/lib/types";
+import { V1_NICHES } from "@/lib/v1-commerce";
 import toast from "react-hot-toast";
 import {
   ArrowRight, Sparkles, Loader2, Check, TrendingUp, Target,
@@ -33,18 +34,8 @@ interface OnboardResult extends Partial<BrandDNA> {
   recommended_products?: { name: string; why: string; margin: string; popularity: string; difficulty: string }[];
 }
 
-const NICHES = [
-  { key: "Streetwear", emoji: "🧥", example: "Bold streetwear that turns heads" },
-  { key: "Fitness", emoji: "💪", example: "Apparel for people who train with intent" },
-  { key: "Anime", emoji: "⛩️", example: "Premium anime gear, not childish fan merch" },
-  { key: "Luxury", emoji: "💎", example: "Quiet luxury for people who know" },
-  { key: "Gaming", emoji: "🎮", example: "Merch for a gaming community" },
-  { key: "Pets", emoji: "🐾", example: "For people obsessed with their pets" },
-  { key: "Coffee", emoji: "☕", example: "A coffee brand with a point of view" },
-  { key: "Creator Merch", emoji: "🎬", example: "Drops for my audience" },
-  { key: "Sustainability", emoji: "🌱", example: "Sustainable goods that look good" },
-  { key: "Custom Idea", emoji: "✨", example: "Something entirely my own" },
-];
+// Apparel-relevant niches — the single source is src/lib/v1-commerce.ts.
+const NICHES = V1_NICHES;
 
 const STAGE_INDEX: Record<Stage, number> = { dream: 0, describe: 1, building: 2, reveal: 3, launch: 4 };
 

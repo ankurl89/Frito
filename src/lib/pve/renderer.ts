@@ -26,8 +26,12 @@ export interface RenderInput {
   printArea: PrintArea;
   /** Artwork as a data URI (svg/png/jpeg) or remote URL. */
   artwork: string;
-  placement: { scale: number; offset_x: number; offset_y: number };
   palette: Record<string, string>;
+  /** Fine-tune within the placement box. Defaults: scale 1, no offset. */
+  placement?: { scale?: number; offset_x?: number; offset_y?: number };
+  /** Garment recolor: target hex + transparent garment cutout URL. */
+  color?: string;
+  cutoutUrl?: string;
 }
 
 export interface RenderOutput {
@@ -56,7 +60,10 @@ function hexToRgb(hex: string) {
 }
 
 export async function render(input: RenderInput): Promise<RenderOutput> {
-  const { printArea, placement, palette } = input;
+  const { printArea, palette } = input;
+  const scale = input.placement?.scale ?? 1;
+  const offX = (input.placement?.offset_x ?? 0) * (RENDER / 500);
+  const offY = (input.placement?.offset_y ?? 0) * (RENDER / 500);
 
   // ── Load inputs. SVG rasterized at high density for crisp edges. ──
   const templateBuf = await toBuffer(input.templateUrl);
@@ -93,10 +100,42 @@ export async function render(input: RenderInput): Promise<RenderOutput> {
   const tx = Math.round((RENDER - tw) / 2), ty = Math.round((RENDER - th) / 2);
 
   const templateResized = await sharp(templateBuf).resize(tw, th).toBuffer();
-  const baseBuf = await sharp({ create: { width: RENDER, height: RENDER, channels: 4, background: BG } })
+  let baseBuf = await sharp({ create: { width: RENDER, height: RENDER, channels: 4, background: BG } })
     .composite([{ input: templateResized, left: tx, top: ty }])
     .png()
     .toBuffer();
+
+  // ── Garment recolor ──
+  // Templates are white garments. To show another color we multiply-tint a
+  // transparent cutout of the garment (preserving fold/shadow detail) and lay
+  // it back over the original (keeping the studio background + drop shadow).
+  // White needs no recolor.
+  const targetHex = (input.color || "").toLowerCase();
+  const needsRecolor = input.cutoutUrl && targetHex && !["#f5f5f0", "#ffffff", "#fff"].includes(targetHex);
+  if (needsRecolor) {
+    try {
+      const rgb = hexToRgb(input.color!);
+      if (rgb) {
+        const cutBuf = await toBuffer(input.cutoutUrl!);
+        const cutResized = await sharp(cutBuf).resize(tw, th).ensureAlpha().toBuffer();
+        // Position the cutout exactly over where the template garment sits.
+        const cutPositioned = await sharp({ create: { width: RENDER, height: RENDER, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+          .composite([{ input: cutResized, left: tx, top: ty }])
+          .png()
+          .toBuffer();
+        const alpha = await sharp(cutPositioned).extractChannel(3).toBuffer();
+        const solid = await sharp({ create: { width: RENDER, height: RENDER, channels: 3, background: { r: rgb.r, g: rgb.g, b: rgb.b } } }).png().toBuffer();
+        const tintedRgb = await sharp(cutPositioned)
+          .removeAlpha()
+          .composite([{ input: solid, blend: "multiply" }])   // white→color, folds→darker
+          .toBuffer();
+        const coloredGarment = await sharp(tintedRgb).joinChannel(alpha).png().toBuffer();
+        baseBuf = await sharp(baseBuf).composite([{ input: coloredGarment, left: 0, top: 0 }]).png().toBuffer();
+      }
+    } catch (err) {
+      console.warn("[pve] recolor skipped:", err);
+    }
+  }
 
   // ── Print rect (px) within the contained template ──
   const printX = tx + printArea.x * tw;
@@ -104,13 +143,10 @@ export async function render(input: RenderInput): Promise<RenderOutput> {
   const printW = printArea.w * tw;
   const printH = printArea.h * th;
 
-  // Placement box (scale + offset). Offsets were authored in a 500px preview.
-  const boxW = printW * placement.scale;
-  const boxH = printH * placement.scale;
-  const offX = (placement.offset_x || 0) * (RENDER / 500);
-  const offY = (placement.offset_y || 0) * (RENDER / 500);
-
-  // Fit artwork inside the box preserving aspect.
+  // Placement box: the named placement sets the default; scale + offset let the
+  // founder fine-tune size and position.
+  const boxW = printW * scale;
+  const boxH = printH * scale;
   const artResizedBuf = await sharp(await artworkBase.png().toBuffer())
     .resize(Math.round(boxW), Math.round(boxH), { fit: "inside" })
     .png()

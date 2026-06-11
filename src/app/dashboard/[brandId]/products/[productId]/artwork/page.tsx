@@ -14,7 +14,8 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Product, BrandDNA } from "@/lib/types";
-import { getTemplate } from "@/lib/qikink-catalog";
+import { getTemplate, placementTarget, getPlacement } from "@/lib/qikink-catalog";
+import { PLACEMENTS, DEFAULT_PLACEMENT, PlacementKey, DEFAULT_COLOR, colorHex, ColorName } from "@/lib/v1-commerce";
 import { ArrowLeft, Loader2, Sparkles, Upload, AlertTriangle } from "lucide-react";
 import MockupCanvas, { MockupCanvasHandle } from "@/components/MockupCanvas";
 import toast from "react-hot-toast";
@@ -29,10 +30,16 @@ export default function ReplaceArtworkPage() {
   const [aiDescription, setAiDescription] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [placementKey, setPlacementKey] = useState<PlacementKey>(DEFAULT_PLACEMENT);
   const [scale, setScale] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const [previewColor, setPreviewColor] = useState<ColorName>(DEFAULT_COLOR);
   const [error, setError] = useState<string | null>(null);
+
+  const productColors: ColorName[] = (product?.colors as ColorName[] | undefined)?.length
+    ? (product!.colors as ColorName[])
+    : [DEFAULT_COLOR];
 
   const canvasRef = useRef<MockupCanvasHandle>(null);
 
@@ -44,11 +51,11 @@ export default function ReplaceArtworkPage() {
       setProduct(p);
       setBrand(b);
       setArtworkUrl(p.artwork_url || p.design_url || null);
-      if (p.placement) {
-        setScale(p.placement.scale || 1);
-        setOffsetX(p.placement.offset_x || 0);
-        setOffsetY(p.placement.offset_y || 0);
-      }
+      if (p.placement?.key) setPlacementKey(p.placement.key);
+      if (p.placement?.scale) setScale(p.placement.scale);
+      if (p.placement?.offset_x) setOffsetX(p.placement.offset_x);
+      if (p.placement?.offset_y) setOffsetY(p.placement.offset_y);
+      if (p.colors?.length) setPreviewColor(p.colors[0]);
     });
   }, [brandId, productId]);
 
@@ -95,7 +102,8 @@ export default function ReplaceArtworkPage() {
         body: JSON.stringify({
           artwork_url: artworkUrl,
           design_url: artworkUrl,
-          placement: { scale, offset_x: offsetX, offset_y: offsetY },
+          template_view: getPlacement(template, placementKey).view,
+          placement: { key: placementKey, scale, offset_x: offsetX, offset_y: offsetY },
         }),
       });
       const patchData = await patchRes.json();
@@ -105,22 +113,30 @@ export default function ReplaceArtworkPage() {
         return;
       }
 
-      // Re-run the PVE pipeline → regenerates all assets + production file + score.
-      const renderRes = await fetch("/api/pve/render", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId,
-          productTemplateId: product.qikink_product_id,
-          artwork: artworkUrl,
-          placement: { scale, offset_x: offsetX, offset_y: offsetY },
-          brandPalette: brand?.palette,
-        }),
-      });
-      const renderData = await renderRes.json();
-      if (!renderRes.ok) {
-        setError(renderData.error || "Asset regeneration failed");
-        setSaving(false);
-        return;
+      // Re-run the PVE pipeline for each offered color (preview color = default).
+      const ordered = [previewColor, ...productColors.filter(c => c !== previewColor)];
+      let renderData: { score?: { total?: number }; error?: string } = {};
+      for (let i = 0; i < ordered.length; i++) {
+        const res = await fetch("/api/pve/render", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId,
+            productTemplateId: product.qikink_product_id,
+            artwork: artworkUrl,
+            placementKey,
+            scale, offsetX, offsetY,
+            color: ordered[i],
+            isDefault: i === 0,
+            brandPalette: brand?.palette,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Asset regeneration failed");
+          setSaving(false);
+          return;
+        }
+        if (i === 0) renderData = data;
       }
 
       toast.success(`Artwork replaced · score ${renderData.score?.total ?? "—"}/100`);
@@ -168,15 +184,26 @@ export default function ReplaceArtworkPage() {
             <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex justify-center">
               <MockupCanvas
                 ref={canvasRef}
-                templateUrl={template.views.front.url}
+                templateUrl={placementTarget(template, placementKey).url}
+                cutoutUrl={placementTarget(template, placementKey).cutout}
+                garmentColor={colorHex(previewColor)}
                 artworkUrl={artworkUrl}
-                printArea={template.views.front.print_area}
+                printArea={placementTarget(template, placementKey).printArea}
                 scale={scale}
                 offsetX={offsetX}
                 offsetY={offsetY}
                 displaySize={500}
               />
             </div>
+            {productColors.length > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                {productColors.map(c => (
+                  <button key={c} onClick={() => setPreviewColor(c)} title={c}
+                    className={`w-6 h-6 rounded-full border-2 ${previewColor === c ? "border-zinc-900 scale-110" : "border-zinc-200"}`}
+                    style={{ backgroundColor: colorHex(c) }} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Controls */}
@@ -211,11 +238,34 @@ export default function ReplaceArtworkPage() {
 
             {/* Placement */}
             <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-              <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-4">PLACEMENT</p>
+              <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-4">PRINT PLACEMENT</p>
+              <div className="grid grid-cols-2 gap-2">
+                {PLACEMENTS.map(p => {
+                  const active = p.key === placementKey;
+                  return (
+                    <button
+                      key={p.key}
+                      onClick={() => setPlacementKey(p.key)}
+                      className={`text-left px-3 py-2.5 rounded-xl border transition-colors ${active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 hover:border-zinc-400 text-zinc-700"}`}
+                    >
+                      <p className="font-bold text-xs">{p.label}</p>
+                      <p className="font-mono text-[9px] mt-0.5 text-zinc-400">{p.view.toUpperCase()} VIEW</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fine-tune */}
+            <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-mono text-[10px] tracking-widest text-zinc-400">FINE-TUNE</p>
+                <button onClick={() => { setScale(1); setOffsetX(0); setOffsetY(0); }} className="font-mono text-[9px] text-zinc-400 hover:text-zinc-900 transition-colors">RESET</button>
+              </div>
               <div className="space-y-3">
-                <Slider label="SCALE" min={0.3} max={1} step={0.05} value={scale} display={`${Math.round(scale * 100)}%`} onChange={setScale} />
-                <Slider label="HORIZONTAL" min={-50} max={50} step={1} value={offsetX} display={`${offsetX}px`} onChange={setOffsetX} />
-                <Slider label="VERTICAL" min={-50} max={50} step={1} value={offsetY} display={`${offsetY}px`} onChange={setOffsetY} />
+                <Slider label="SIZE" min={0.4} max={1.2} step={0.02} value={scale} display={`${Math.round(scale * 100)}%`} onChange={setScale} />
+                <Slider label="HORIZONTAL" min={-60} max={60} step={1} value={offsetX} display={`${offsetX}px`} onChange={setOffsetX} />
+                <Slider label="VERTICAL" min={-60} max={60} step={1} value={offsetY} display={`${offsetY}px`} onChange={setOffsetY} />
               </div>
             </div>
 

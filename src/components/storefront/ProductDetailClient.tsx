@@ -3,26 +3,33 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BrandDNA, Product, ProductVariant } from "@/lib/types";
+import { BrandDNA, Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-store";
+import { colorHex } from "@/lib/v1-commerce";
 import StorefrontProductCard from "./StorefrontProductCard";
 import { Truck, RotateCcw, Shield, Plus, Minus } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ProductDetailClient({
-  brand, product, related, slug, galleryImages = [],
-}: { brand: BrandDNA; product: Product; related: Product[]; slug: string; galleryImages?: string[] }) {
+  brand, product, related, slug, galleryImages = [], colorImages = {},
+}: { brand: BrandDNA; product: Product; related: Product[]; slug: string; galleryImages?: string[]; colorImages?: Record<string, string> }) {
   const router = useRouter();
   const sizes = (product.variants || []).map(v => v.size).filter(Boolean) as string[];
+  const colors = (product.colors || []) as string[];
   const [selectedSize, setSelectedSize] = useState<string | undefined>(sizes[0]);
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(colors[0]);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const add = useCart(s => s.add);
 
-  // Gallery — prefer the PVE asset set (primary, close-up, …); fall back to mockup/artwork.
-  const images = (galleryImages.length > 0
+  // Hero image for the selected color (falls back to default gallery/mockup).
+  const colorHero = selectedColor ? colorImages[selectedColor.toLowerCase()] : undefined;
+  const baseImages = (galleryImages.length > 0
     ? galleryImages
     : [product.mockup_url, product.artwork_url].filter(Boolean) as string[]);
+  // When a non-default color is chosen, lead with its hero, then the close-ups.
+  const images = colorHero ? [colorHero, ...baseImages.filter(u => u !== colorHero).slice(1)] : baseImages;
+  const displayImage = images[activeImage] || colorHero || baseImages[0];
 
   function addToCart() {
     add({
@@ -31,8 +38,9 @@ export default function ProductDetailClient({
       brand_slug: slug,
       name: product.name,
       size: selectedSize,
+      color: selectedColor,
       price: product.sell_price,
-      image: product.mockup_url || product.artwork_url || "",
+      image: colorHero || product.mockup_url || product.artwork_url || "",
       quantity,
     });
     toast.success("Added to cart");
@@ -59,9 +67,9 @@ export default function ProductDetailClient({
           {/* Gallery */}
           <div>
             <div className="aspect-square rounded-2xl overflow-hidden mb-3" style={{ backgroundColor: "color-mix(in srgb, var(--brand-text) 4%, var(--brand-bg))" }}>
-              {images[activeImage] ? (
+              {displayImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={images[activeImage]} alt={product.name} className="w-full h-full object-cover" />
+                <img src={displayImage} alt={product.name} className="w-full h-full object-cover" />
               ) : null}
             </div>
             {images.length > 1 && (
@@ -103,6 +111,31 @@ export default function ProductDetailClient({
             <p className="text-base opacity-80 leading-relaxed mb-8">
               {product.listing_description || product.description}
             </p>
+
+            {/* Colors */}
+            {colors.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-mono text-[10px] tracking-widest opacity-60">COLOR</p>
+                  <span className="text-xs opacity-60">{selectedColor}</span>
+                </div>
+                <div className="flex gap-2.5 flex-wrap">
+                  {colors.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => { setSelectedColor(c); setActiveImage(0); }}
+                      title={c}
+                      className="relative w-9 h-9 rounded-full border-2 transition-all"
+                      style={{
+                        backgroundColor: colorHex(c),
+                        borderColor: selectedColor === c ? "var(--brand-text)" : "color-mix(in srgb, var(--brand-text) 20%, transparent)",
+                        transform: selectedColor === c ? "scale(1.1)" : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Sizes */}
             {sizes.length > 0 && (

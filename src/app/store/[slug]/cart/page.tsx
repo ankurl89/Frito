@@ -47,7 +47,7 @@ export default function CartPage() {
             {/* Items */}
             <div className="lg:col-span-2 space-y-3">
               {cartItems.map(item => (
-                <div key={`${item.product_id}-${item.size}`} className="bg-white rounded-2xl p-4 flex gap-4 border" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
+                <div key={`${item.product_id}-${item.size}-${item.color}`} className="bg-white rounded-2xl p-4 flex gap-4 border" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
                   <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--brand-text) 6%, transparent)" }}>
                     {item.image && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -56,19 +56,21 @@ export default function CartPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">{item.name}</p>
-                    {item.size && <p className="text-xs opacity-60 mt-0.5">Size {item.size}</p>}
+                    {(item.size || item.color) && (
+                      <p className="text-xs opacity-60 mt-0.5">{[item.color, item.size && `Size ${item.size}`].filter(Boolean).join(" · ")}</p>
+                    )}
                     <p className="font-black mt-1">₹{item.price.toLocaleString("en-IN")}</p>
                     <div className="flex items-center justify-between mt-3">
                       <div className="inline-flex items-center border rounded-lg" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 20%, transparent)" }}>
-                        <button onClick={() => setQuantity(item.product_id, item.size, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:opacity-70">
+                        <button onClick={() => setQuantity(item.product_id, item.size, item.color, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center hover:opacity-70">
                           <Minus size={12} />
                         </button>
                         <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
-                        <button onClick={() => setQuantity(item.product_id, item.size, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center hover:opacity-70">
+                        <button onClick={() => setQuantity(item.product_id, item.size, item.color, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center hover:opacity-70">
                           <Plus size={12} />
                         </button>
                       </div>
-                      <button onClick={() => remove(item.product_id, item.size)} className="text-xs opacity-50 hover:opacity-100 flex items-center gap-1">
+                      <button onClick={() => remove(item.product_id, item.size, item.color)} className="text-xs opacity-50 hover:opacity-100 flex items-center gap-1">
                         <X size={11} /> Remove
                       </button>
                     </div>

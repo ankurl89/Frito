@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const productMap = new Map((products || []).map(p => [p.id, p]));
 
   // Build order rows — created directly as `paid`.
-  const rows = items.map((item: { product_id: string; size?: string; quantity: number; price: number }) => {
+  const rows = items.map((item: { product_id: string; size?: string; color?: string; quantity: number; price: number }) => {
     const prod = productMap.get(item.product_id);
     const baseCost = prod?.base_cost ?? 0;
     const sellPrice = prod?.sell_price ?? item.price ?? 0; // authoritative server price
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       customer_email,
       customer_phone,
       shipping_address,
-      variant: { size: item.size, price: sellPrice },
+      variant: { size: item.size, color: item.color, price: sellPrice },
       quantity: item.quantity,
       total_amount: totalAmount,
       cost_amount: costAmount,

@@ -19,8 +19,11 @@ import {
   QIKINK_CATALOG,
   CATEGORIES,
   suggestSellPrice,
+  placementTarget,
+  getPlacement,
   ProductTemplate,
 } from "@/lib/qikink-catalog";
+import { PLACEMENTS, DEFAULT_PLACEMENT, PlacementKey, SUPPORTED_COLORS, DEFAULT_COLOR, colorHex, ColorName } from "@/lib/v1-commerce";
 import { BrandDNA } from "@/lib/types";
 import { ArrowLeft, Check, Loader2, Sparkles, Upload, Pencil, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -53,10 +56,21 @@ export default function NewProductPage() {
   const [generating, setGenerating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Placement
+  // Placement (named placement + fine-tune)
+  const [placementKey, setPlacementKey] = useState<PlacementKey>(DEFAULT_PLACEMENT);
   const [scale, setScale] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+
+  // Colors offered (multi) + which color is previewed; sizes offered (multi)
+  const [colors, setColors] = useState<ColorName[]>([DEFAULT_COLOR]);
+  const [previewColor, setPreviewColor] = useState<ColorName>(DEFAULT_COLOR);
+  const [sizes, setSizes] = useState<string[]>([]);
+
+  const toggleColor = (c: ColorName) =>
+    setColors(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]));
+  const toggleSize = (s: string) =>
+    setSizes(prev => (prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]));
 
   // Pricing + listing
   const [sellPrice, setSellPrice] = useState(0);
@@ -68,6 +82,11 @@ export default function NewProductPage() {
   useEffect(() => {
     fetch(`/api/brands/${brandId}`).then(r => r.json()).then(setBrand);
   }, [brandId]);
+
+  // Keep the previewed color within the set of offered colors.
+  useEffect(() => {
+    if (colors.length && !colors.includes(previewColor)) setPreviewColor(colors[0]);
+  }, [colors, previewColor]);
 
   const stepIdx = STEPS.findIndex(s => s.key === step);
   const filtered = category === "All" ? QIKINK_CATALOG : QIKINK_CATALOG.filter(p => p.category === category);
@@ -187,14 +206,15 @@ export default function NewProductPage() {
           category: template.category,
           qikink_product_id: template.id,
           qikink_product_name: template.name,
-          template_view: "front",
+          template_view: getPlacement(template, placementKey).view,
           base_cost: template.base_price,
           sell_price: sellPrice,
           design_prompt: artworkPrompt,
           artwork_url: artworkUrl,
           design_url: artworkUrl,
-          placement: { scale, offset_x: offsetX, offset_y: offsetY },
-          variants: template.available_sizes.map(s => ({ size: s, price: sellPrice })),
+          placement: { key: placementKey, scale, offset_x: offsetX, offset_y: offsetY },
+          colors,
+          variants: sizes.map(s => ({ size: s, price: sellPrice })),
           listing_title: listing.listing_title,
           listing_description: listing.listing_description,
           seo_tags: listing.seo_tags,
@@ -204,20 +224,30 @@ export default function NewProductPage() {
       const product = await createRes.json();
       if (product.error) throw new Error(product.error);
 
-      // 2) Run the PVE rendering pipeline (server-side Sharp).
-      const renderRes = await fetch("/api/pve/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.id,
-          productTemplateId: template.id,
-          artwork: artworkUrl,
-          placement: { scale, offset_x: offsetX, offset_y: offsetY },
-          brandPalette: brand.palette,
-        }),
-      });
-      const renderData = await renderRes.json();
-      if (!renderRes.ok) throw new Error(renderData.error || "Asset generation failed");
+      // 2) Run the PVE pipeline once per offered color (first = default; sets
+      //    the product hero + score). Preview color goes first so its mockup
+      //    becomes the default storefront image.
+      const ordered = [previewColor, ...colors.filter(c => c !== previewColor)];
+      let renderData: { score?: { total?: number; publishable?: boolean }; error?: string } = {};
+      for (let i = 0; i < ordered.length; i++) {
+        const res = await fetch("/api/pve/render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId: product.id,
+            productTemplateId: template.id,
+            artwork: artworkUrl,
+            placementKey,
+            scale, offsetX, offsetY,
+            color: ordered[i],
+            isDefault: i === 0,
+            brandPalette: brand.palette,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Asset generation failed");
+        if (i === 0) renderData = data;
+      }
 
       const score = renderData.score?.total ?? 0;
       const publishable = renderData.score?.publishable ?? false;
@@ -248,8 +278,8 @@ export default function NewProductPage() {
           <ArrowLeft size={15} className="text-zinc-600" />
         </Link>
         <div>
-          <h1 className="font-black text-zinc-900 text-lg tracking-tight">Add Product</h1>
-          <p className="font-mono text-[10px] tracking-widest text-zinc-400">REAL TEMPLATE · MANUFACTURING ACCURATE</p>
+          <h1 className="font-black text-zinc-900 text-lg tracking-tight">Create Apparel Product</h1>
+          <p className="font-mono text-[10px] tracking-widest text-zinc-400">PREMIUM APPAREL · MANUFACTURING ACCURATE</p>
         </div>
 
         {/* Step tracker */}
@@ -292,7 +322,7 @@ export default function NewProductPage() {
               {filtered.map(t => (
                 <div
                   key={t.id}
-                  onClick={() => setTemplate(t)}
+                  onClick={() => { setTemplate(t); setSizes(t.available_sizes); }}
                   className={`bg-white border rounded-2xl overflow-hidden cursor-pointer transition-all hover:shadow-md ${
                     template?.id === t.id ? "border-zinc-900 ring-2 ring-zinc-900 shadow-md" : "border-zinc-200 hover:border-zinc-400"
                   }`}
@@ -311,6 +341,11 @@ export default function NewProductPage() {
                   <div className="p-3">
                     <p className="font-bold text-xs text-zinc-900 truncate">{t.name}</p>
                     <p className="font-mono text-[10px] text-zinc-400 mt-0.5">from ₹{t.base_price} · {t.material.split(",")[0]}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className={`font-mono text-[8px] px-1.5 py-0.5 rounded ${t.difficulty === "Easy" ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"}`}>{t.difficulty.toUpperCase()}</span>
+                      <span className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-600">{t.popularity.toUpperCase()} DEMAND</span>
+                      <span className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">~{t.margin_pct}% MARGIN</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -400,9 +435,11 @@ export default function NewProductPage() {
               <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex justify-center">
                 <MockupCanvas
                   ref={canvasRef}
-                  templateUrl={template.views.front.url}
+                  templateUrl={placementTarget(template, placementKey).url}
+                  cutoutUrl={placementTarget(template, placementKey).cutout}
+                  garmentColor={colorHex(previewColor)}
                   artworkUrl={artworkUrl}
-                  printArea={template.views.front.print_area}
+                  printArea={placementTarget(template, placementKey).printArea}
                   scale={scale}
                   offsetX={offsetX}
                   offsetY={offsetY}
@@ -410,42 +447,93 @@ export default function NewProductPage() {
                 />
               </div>
               <p className="font-mono text-[9px] text-zinc-400 mt-3 text-center tracking-wider">
-                ↑ THIS IS EXACTLY HOW THE PRODUCT WILL LOOK · SUPPLIER TEMPLATE NEVER MODIFIED
+                ↑ EXACTLY HOW THE PRODUCT WILL LOOK · PREVIEWING {previewColor.toUpperCase()}
               </p>
             </div>
 
             {/* Controls */}
             <div className="md:col-span-2 space-y-4">
               <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-                <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-4">PLACEMENT</p>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs mb-2">
-                      <span className="font-mono text-zinc-500 tracking-wider">SCALE</span>
-                      <span className="font-black text-zinc-900">{Math.round(scale * 100)}%</span>
-                    </div>
-                    <input type="range" min={0.3} max={1} step={0.05} value={scale}
-                      onChange={e => setScale(Number(e.target.value))}
-                      className="w-full accent-violet-600" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-2">
-                      <span className="font-mono text-zinc-500 tracking-wider">HORIZONTAL</span>
-                      <span className="font-black text-zinc-900">{offsetX}px</span>
-                    </div>
-                    <input type="range" min={-50} max={50} value={offsetX}
-                      onChange={e => setOffsetX(Number(e.target.value))}
-                      className="w-full accent-violet-600" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-2">
-                      <span className="font-mono text-zinc-500 tracking-wider">VERTICAL</span>
-                      <span className="font-black text-zinc-900">{offsetY}px</span>
-                    </div>
-                    <input type="range" min={-50} max={50} value={offsetY}
-                      onChange={e => setOffsetY(Number(e.target.value))}
-                      className="w-full accent-violet-600" />
-                  </div>
+                <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-4">PRINT PLACEMENT</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PLACEMENTS.map(p => {
+                    const active = p.key === placementKey;
+                    return (
+                      <button
+                        key={p.key}
+                        onClick={() => setPlacementKey(p.key)}
+                        className={`text-left px-3 py-2.5 rounded-xl border transition-colors ${active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 hover:border-zinc-400 text-zinc-700"}`}
+                      >
+                        <p className="font-bold text-xs">{p.label}</p>
+                        <p className={`font-mono text-[9px] mt-0.5 ${active ? "text-zinc-400" : "text-zinc-400"}`}>{p.view.toUpperCase()} VIEW</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Fine-tune */}
+              <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-mono text-[10px] tracking-widest text-zinc-400">FINE-TUNE</p>
+                  <button
+                    onClick={() => { setScale(1); setOffsetX(0); setOffsetY(0); }}
+                    className="font-mono text-[9px] text-zinc-400 hover:text-zinc-900 transition-colors"
+                  >RESET</button>
+                </div>
+                <div className="space-y-3">
+                  <Slider label="SIZE" min={0.4} max={1.2} step={0.02} value={scale} display={`${Math.round(scale * 100)}%`} onChange={setScale} />
+                  <Slider label="HORIZONTAL" min={-60} max={60} step={1} value={offsetX} display={`${offsetX}px`} onChange={setOffsetX} />
+                  <Slider label="VERTICAL" min={-60} max={60} step={1} value={offsetY} display={`${offsetY}px`} onChange={setOffsetY} />
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+                <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-3">COLORS OFFERED</p>
+                <div className="flex gap-2.5 flex-wrap">
+                  {SUPPORTED_COLORS.map(c => {
+                    const on = colors.includes(c.name);
+                    return (
+                      <button
+                        key={c.name}
+                        onClick={() => toggleColor(c.name)}
+                        onMouseEnter={() => on && setPreviewColor(c.name)}
+                        title={c.name}
+                        className={`relative w-9 h-9 rounded-full border-2 transition-all ${on ? "border-zinc-900 scale-110" : "border-zinc-200 opacity-50 hover:opacity-100"}`}
+                        style={{ backgroundColor: c.hex }}
+                      >
+                        {on && <Check size={13} className={`absolute inset-0 m-auto ${["White", "Beige"].includes(c.name) ? "text-zinc-900" : "text-white"}`} />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="font-mono text-[9px] text-zinc-400">PREVIEW:</span>
+                  {colors.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setPreviewColor(c)}
+                      className={`font-mono text-[9px] px-2 py-0.5 rounded ${previewColor === c ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-500"}`}
+                    >{c}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sizes */}
+              <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+                <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-3">SIZES OFFERED</p>
+                <div className="flex gap-2 flex-wrap">
+                  {template.available_sizes.map(s => {
+                    const on = sizes.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => toggleSize(s)}
+                        className={`min-w-[40px] px-3 py-2 rounded-lg border text-xs font-bold transition-colors ${on ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 text-zinc-500 hover:border-zinc-400"}`}
+                      >{s}</button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -455,8 +543,9 @@ export default function NewProductPage() {
                 <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between"><span className="text-zinc-500">Product</span><span className="font-bold">{template.name}</span></div>
                   <div className="flex justify-between"><span className="text-zinc-500">Material</span><span className="font-bold text-xs">{template.material}</span></div>
-                  <div className="flex justify-between"><span className="text-zinc-500">View</span><span className="font-bold">Front</span></div>
-                  <div className="flex justify-between"><span className="text-zinc-500">Print size</span><span className="font-bold">{template.views.front.print_area.print_px_width}×{template.views.front.print_area.print_px_height}</span></div>
+                  <div className="flex justify-between"><span className="text-zinc-500">Placement</span><span className="font-bold">{getPlacement(template, placementKey).label}</span></div>
+                  <div className="flex justify-between"><span className="text-zinc-500">Production</span><span className="font-bold">{template.production_days}</span></div>
+                  <div className="flex justify-between"><span className="text-zinc-500">Print size</span><span className="font-bold">{placementTarget(template, placementKey).printArea.print_px_width}×{placementTarget(template, placementKey).printArea.print_px_height}</span></div>
                 </div>
               </div>
 
@@ -464,7 +553,7 @@ export default function NewProductPage() {
                 <button onClick={() => setStep("artwork")} className="flex-1 border-2 border-zinc-200 text-zinc-600 font-bold text-sm py-3 rounded-xl hover:border-zinc-400 transition-colors flex items-center justify-center gap-2">
                   <Pencil size={13} /> Change artwork
                 </button>
-                <button onClick={approvePreview} disabled={generating} className="flex-1 bg-violet-600 text-white font-bold text-sm py-3 rounded-xl hover:bg-violet-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                <button onClick={approvePreview} disabled={generating || colors.length === 0 || sizes.length === 0} className="flex-1 bg-violet-600 text-white font-bold text-sm py-3 rounded-xl hover:bg-violet-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                   {generating ? <><Loader2 size={13} className="animate-spin" /> Working…</> : <>Approve →</>}
                 </button>
               </div>
@@ -481,15 +570,26 @@ export default function NewProductPage() {
               <div className="bg-white border border-zinc-200 rounded-2xl p-6 flex justify-center">
                 <MockupCanvas
                   ref={canvasRef}
-                  templateUrl={template.views.front.url}
+                  templateUrl={placementTarget(template, placementKey).url}
+                  cutoutUrl={placementTarget(template, placementKey).cutout}
+                  garmentColor={colorHex(previewColor)}
                   artworkUrl={artworkUrl}
-                  printArea={template.views.front.print_area}
+                  printArea={placementTarget(template, placementKey).printArea}
                   scale={scale}
                   offsetX={offsetX}
                   offsetY={offsetY}
                   displaySize={500}
                 />
               </div>
+              {colors.length > 0 && (
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  {colors.map(c => (
+                    <button key={c} onClick={() => setPreviewColor(c)} title={c}
+                      className={`w-6 h-6 rounded-full border-2 ${previewColor === c ? "border-zinc-900 scale-110" : "border-zinc-200"}`}
+                      style={{ backgroundColor: colorHex(c) }} />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Listing + pricing */}
@@ -540,6 +640,20 @@ export default function NewProductPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function Slider({ label, min, max, step, value, display, onChange }: {
+  label: string; min: number; max: number; step: number; value: number; display: string; onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1.5">
+        <span className="font-mono text-zinc-500 tracking-wider">{label}</span>
+        <span className="font-black text-zinc-900">{display}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} className="w-full accent-violet-600" />
     </div>
   );
 }

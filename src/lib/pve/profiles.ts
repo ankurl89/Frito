@@ -89,8 +89,8 @@ const DEFAULT_PROFILE: VisualizationProfile = {
  * and doesn't strictly need transparency.
  */
 const PRODUCT_OVERRIDES: Record<string, Partial<VisualizationProfile>> = {
-  "QK-005": { requireTransparency: false, minCoverage: 0.55, weights: { resolution: 25, printReadiness: 20, coverage: 30, brand: 15, aspect: 10 } }, // Phone case
-  "QK-006": { minDpi: 220, minCoverage: 0.55 }, // A3 poster — premium print resolution
+  // V1 catalog (4 apparel products) uses the Apparel category profile directly.
+  // Per-SKU overrides return here when a product's needs diverge from its category.
 };
 
 export function getVisualizationProfile(category: string, productId?: string): VisualizationProfile {

@@ -53,6 +53,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     .sort((a, b) => order.indexOf(a.asset_type) - order.indexOf(b.asset_type))
     .map(a => a.url);
 
+  // Per-color hero images (asset_type "primary:<colorslug>") → { Black: url, … }.
+  const colorImages: Record<string, string> = {};
+  for (const a of assets || []) {
+    const m = /^primary:(.+)$/.exec(a.asset_type);
+    if (m) colorImages[m[1]] = a.url;
+  }
+
   return (
     <ProductDetailClient
       brand={brand}
@@ -60,6 +67,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       related={(related || []) as Product[]}
       slug={slug}
       galleryImages={galleryImages}
+      colorImages={colorImages}
     />
   );
 }

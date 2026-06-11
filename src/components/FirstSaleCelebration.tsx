@@ -18,6 +18,17 @@ interface FirstSaleData {
 
 export default function FirstSaleCelebration() {
   const [data, setData] = useState<FirstSaleData | null>(null);
+  // Precompute confetti once (client-only) so positions never differ between
+  // the hydration render and subsequent renders.
+  const [confetti] = useState(() =>
+    Array.from({ length: 30 }, (_, i) => ({
+      left: Math.random() * 100,
+      top: Math.random() * 60,
+      color: ["#fbbf24", "#ec4899", "#22d3ee", "#a78bfa", "#34d399"][i % 5],
+      delay: Math.random() * 2,
+      duration: 1 + Math.random() * 2,
+    }))
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -64,16 +75,16 @@ export default function FirstSaleCelebration() {
       <div className="bg-gradient-to-br from-violet-600 via-violet-700 to-zinc-900 rounded-3xl max-w-lg w-full p-10 text-white text-center relative overflow-hidden">
         {/* Confetti dots */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {Array.from({ length: 30 }).map((_, i) => (
+          {confetti.map((c, i) => (
             <div
               key={i}
               className="absolute w-2 h-2 rounded-full animate-bounce"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 60}%`,
-                backgroundColor: ["#fbbf24", "#ec4899", "#22d3ee", "#a78bfa", "#34d399"][i % 5],
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random() * 2}s`,
+                left: `${c.left}%`,
+                top: `${c.top}%`,
+                backgroundColor: c.color,
+                animationDelay: `${c.delay}s`,
+                animationDuration: `${c.duration}s`,
               }}
             />
           ))}

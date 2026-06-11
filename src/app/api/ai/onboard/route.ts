@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
+import { AI_CONSTRAINTS } from "@/lib/v1-commerce";
 import { guardAi } from "@/lib/guardrails/guard";
 
 export const runtime = "nodejs";
@@ -47,7 +48,9 @@ Return ONLY a JSON object (no markdown, no prose) with EXACTLY this shape:
   ]
 }
 
-Recommend 3 products, ordered easiest-first. Make every field specific to THIS brand.`;
+${AI_CONSTRAINTS}
+
+Recommend exactly 3 products, ordered easiest-first. EVERY recommended product's "name" MUST be one of: Oversized T-Shirt, Classic Unisex T-Shirt, Hoodie, Sweatshirt. Never recommend any non-apparel product. Make every field specific to THIS brand.`;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();

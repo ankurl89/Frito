@@ -66,6 +66,7 @@ export default function CheckoutPage() {
           items: items.map(i => ({
             product_id: i.product_id,
             size: i.size,
+            color: i.color,
             quantity: i.quantity,
             price: i.price,
           })),
@@ -252,7 +253,7 @@ export default function CheckoutPage() {
               <Label>{items.length} {items.length === 1 ? "ITEM" : "ITEMS"}</Label>
               <div className="space-y-3 mt-3 mb-4">
                 {items.map(item => (
-                  <div key={`${item.product_id}-${item.size}`} className="flex gap-3 items-start">
+                  <div key={`${item.product_id}-${item.size}-${item.color}`} className="flex gap-3 items-start">
                     <div
                       className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 relative"
                       style={{ backgroundColor: "color-mix(in srgb, var(--brand-text) 6%, transparent)" }}
@@ -270,7 +271,11 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-xs leading-snug line-clamp-2">{item.name}</p>
-                      {item.size && <p className="text-[10px] opacity-60 mt-0.5">Size {item.size}</p>}
+                      {(item.size || item.color) && (
+                        <p className="text-[10px] opacity-60 mt-0.5">
+                          {[item.color, item.size && `Size ${item.size}`].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
                     </div>
                     <p className="font-bold text-xs whitespace-nowrap">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
                   </div>

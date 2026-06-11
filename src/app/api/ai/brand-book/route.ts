@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { openrouter, MODELS } from "@/lib/openrouter";
 import { createClient } from "@/lib/supabase/server";
 import { awardXP } from "@/lib/founder-engine";
+import { AI_CONSTRAINTS } from "@/lib/v1-commerce";
 import { guardAi } from "@/lib/guardrails/guard";
 
 /**
@@ -43,7 +44,9 @@ export async function POST(req: NextRequest) {
 
   const palette = brand.palette || {};
 
-  const prompt = `You are a senior brand strategist at a top branding agency. Build a complete Brand Book for an existing brand. The output must feel like work delivered by a real agency, not a templated AI.
+  const prompt = `${AI_CONSTRAINTS}
+
+You are a senior brand strategist at a top branding agency. Build a complete Brand Book for an existing PREMIUM APPAREL brand. The output must feel like work delivered by a real agency, not a templated AI. All product-related fields (core_categories, hero_products, future_expansion, launch_collection) must reference ONLY the four supported apparel products — never any other product type.
 
 BRAND DNA (already created)
 - Name: ${brand.name}
