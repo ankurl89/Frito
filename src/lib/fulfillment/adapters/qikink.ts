@@ -72,27 +72,34 @@ export class QikinkAdapter implements FulfillmentProvider {
     }
 
     // Real Qikink Create Order call. Resolve each line to a real Qikink SKU,
-    // placement, and print type from our neutral catalog identifiers.
+    // placement_sku, and print type from our neutral catalog identifiers.
+    // Payload shape mirrors the documented Qikink "Create Order" request.
+    const [firstName, ...restName] = (input.shippingAddress.name || "").trim().split(/\s+/);
     const body = {
       order_number: input.orderId,
       qikink_shipping: "1",
-      gateway: "Prepaid",
+      gateway: "Prepaid",                       // Frito collects payment online
+      total_order_value: String(input.totalOrderValue ?? 0),
       line_items: input.items.map(i => ({
         search_from_my_products: 0,
         quantity: String(i.quantity),
         print_type_id: resolveQikinkPrintTypeId(i.catalogProductId),
-        price: "0",
+        price: String(i.price ?? 0),
         sku: resolveQikinkSku(i.catalogProductId, i.color || "", i.size || ""),
         designs: i.printFileUrl
           ? [{
-              design_code: resolveQikinkPlacement(i.placementKey),
+              design_code: `frito-${resolveQikinkPlacement(i.placementKey)}`,
+              placement_sku: resolveQikinkPlacement(i.placementKey),
+              width_inches: "",
+              height_inches: "",
               design_link: i.printFileUrl,
-              mockup_link: i.mockupUrl,
+              mockup_link: i.mockupUrl || "",
             }]
           : [],
       })),
       shipping_address: {
-        first_name: input.shippingAddress.name,
+        first_name: firstName || input.shippingAddress.name,
+        last_name: restName.join(" "),
         address1: input.shippingAddress.line1,
         address2: input.shippingAddress.line2 || "",
         phone: input.shippingAddress.phone || input.customer.phone || "",
@@ -132,22 +139,28 @@ export class QikinkAdapter implements FulfillmentProvider {
 
   async getTracking(providerOrderId: string): Promise<TrackingInfo> {
     if (this.sandbox) return { raw: { sandbox: true } };
-    const res = await fetch(`${QIKINK_BASE}/api/order/${providerOrderId}`, {
+    // Single order is GET /api/order?id={id} (query param, not a path segment).
+    const res = await fetch(`${QIKINK_BASE}/api/order?id=${encodeURIComponent(providerOrderId)}`, {
       headers: await qikinkAuthHeaders(),
     });
     const raw = await res.json();
-    const status = String(raw.order_status || raw.status || "").toLowerCase();
+    // Endpoint may return the order object or a single-element array.
+    const order = Array.isArray(raw) ? raw[0] : raw;
+    const shipping = order?.shipping || {};
+    const status = String(order?.status || "").toLowerCase();
     return {
       state: STATUS_MAP[status],
-      trackingNumber: raw.awb || raw.tracking_id,
-      courier: raw.courier,
-      trackingUrl: raw.tracking_link,
+      trackingNumber: shipping.awb ? String(shipping.awb) : undefined,
+      trackingUrl: shipping.tracking_link,
       raw,
     };
   }
 
   async cancelOrder(providerOrderId: string): Promise<void> {
     if (this.sandbox) return;
+    // NOTE: Qikink's documented API exposes no cancel endpoint (token, order/create,
+    // order list, order?id only). Post-submission cancellation may be support-only.
+    // This best-effort call is VERIFY — confirm the real path or remove.
     await fetch(`${QIKINK_BASE}/api/order/cancel/${providerOrderId}`, {
       method: "POST",
       headers: await qikinkAuthHeaders(),

@@ -26,15 +26,36 @@ Qikink will share **LIVE** API credentials around **2026-06-14** (3 days after
 | Live credentials | ⏳ Pending (~2026-06-14) |
 | End-to-end sandbox test order | ⬜ Next, once SKU tables filled |
 
-## Verified facts (from the sandbox, 2026-06-11)
+## Verified facts (from the sandbox + official Postman collection, 2026-06-11)
 
-- Token endpoint: `POST https://sandbox.qikink.com/api/token`
-  (form-urlencoded `ClientId`, `client_secret`).
-- Response: `{ "ClientId": <num>, "Accesstoken": "<jwt>", "expires_in": 3600 }`
-  — token lives **1 hour**.
-- Live base: `https://api.qikink.com` · Sandbox base: `https://sandbox.qikink.com`.
-- No public product/catalogue GET endpoint found under obvious paths (404s),
-  so SKUs come from the dashboard **SKU sheet**, not auto-discovery.
+- **Token**: `POST {base}/api/token` (form-urlencoded `ClientId`, `client_secret`)
+  → `{ "ClientId": <num>, "Accesstoken": "<jwt>", "expires_in": 3600 }`.
+  Token lives **1 hour**. (Tested live against sandbox — works.)
+- **Auth headers**: every call sends `ClientId` + `Accesstoken`.
+- **Rate limit**: 30 requests / minute.
+- **Create order**: `POST {base}/api/order/create` →
+  `{ "message": "...", "order_id": <num>, "status_code": "200" }`.
+  Body: `order_number`, `qikink_shipping`, `gateway`, `total_order_value`,
+  `line_items[]` (`sku`, `quantity`, `price`, `print_type_id`,
+  `designs[]` with `placement_sku` + `design_code` + `design_link` +
+  `mockup_link` + `width_inches`/`height_inches`), and `shipping_address`
+  (`first_name`, `last_name`, `address1`, `address2`, `phone`, `email`,
+  `city`, `province`, `zip`, `country_code`).
+- **SKU format**: `GARMENT-COLOR-SIZE`, e.g. `MVnHs-Wh-S`, `UOsMRnHs-Lv-XL`
+  (`Wh`=White, `Lv`=Lavender; 2-letter color codes). Our `composeSku` matches.
+- **placement_sku**: short codes; `"fr"` (front) confirmed in docs.
+- **List orders**: `GET {base}/api/order`. **Single order**:
+  `GET {base}/api/order?id={id}&from_date=&to_date=` → object with
+  `status`, `total_order_value`, `line_items[]`, and `shipping{ awb,
+  tracking_link, ... }`. Tracking = `shipping.awb` / `shipping.tracking_link`.
+- **No products/catalogue API** exists in the collection — SKUs must come from
+  the dashboard SKU sheet (confirmed, not just 404 guessing).
+- **No cancel endpoint** in the collection — post-submit cancellation is likely
+  support-only. `cancelOrder` is a best-effort guess (VERIFY).
+- Base URLs: Live `https://api.qikink.com` · Sandbox `https://sandbox.qikink.com`.
+
+All of the above are now reflected in the adapter (`qikink.ts`), so the
+order-create and tracking calls match the documented shapes.
 
 ## What's needed to finish (from the Qikink dashboard)
 
@@ -48,8 +69,16 @@ exported SKU sheet — not all 96 combos, just:
 
 ## Still marked "VERIFY" (confirm during sandbox test order)
 
-- `design_code` placement param on the order line (front / back / left_chest).
+- Color codes for **Black / Beige / Navy** (White=`Wh` seen) — from the SKU sheet.
+- `placement_sku` codes for back (`bk`) and pocket (`lc`) — `fr` is confirmed.
 - `print_type_id` numeric values (assumed DTG=1).
-- Order-create response field for the provider order id
-  (`order_id` / `id` / `qikink_order_id`).
-- Webhook signature header name + status strings.
+- The order **status** enumeration for the production lifecycle (we saw
+  `"Archived"`; the in-production / shipped strings in STATUS_MAP are still
+  best-guess until a real order moves through them).
+- Webhook payload shape + signature header (no webhook in the collection —
+  configured separately in the dashboard, if available in sandbox).
+- Whether a real cancel endpoint exists.
+
+_Resolved since first pass: token shape, create-order body, SKU format,
+placement field name (`placement_sku`), tracking endpoint + fields, order-id
+response field (`order_id`)._

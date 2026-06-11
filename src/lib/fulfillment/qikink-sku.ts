@@ -56,15 +56,16 @@ const SKU_OVERRIDES: Record<string, string> = {
 };
 
 /**
- * Qikink placement code per OUR placement key. The "full_back" placement uses
- * Qikink's back position with a larger print area on our side.
- * VERIFY the exact placement codes/labels Qikink expects on a line item.
+ * Qikink `placement_sku` per OUR placement key. Qikink uses short codes; the API
+ * docs confirm "fr" (front). "bk" (back), "lc" (left chest / pocket) follow
+ * Qikink's standard scheme — VERIFY the pocket code against the dashboard, as
+ * placement codes can vary per garment.
  */
 const PLACEMENT_CODE: Record<PlacementKey, string> = {
-  front_center: "front",        // VERIFY (Qikink front/chest placement)
-  back_center:  "back",         // VERIFY
-  front_pocket: "left_chest",   // VERIFY (pocket / left-chest placement)
-  full_back:    "back",         // VERIFY (same back position, full-size art)
+  front_center: "fr",   // confirmed in API docs
+  back_center:  "bk",   // VERIFY
+  front_pocket: "lc",   // VERIFY (left-chest / pocket)
+  full_back:    "bk",   // VERIFY (back position, full-size art)
 };
 
 /**

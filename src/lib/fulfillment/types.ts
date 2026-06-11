@@ -31,6 +31,8 @@ export interface FulfillmentLineItem {
   /** Named print placement (front_center / back_center / front_pocket / full_back). */
   placementKey?: string;
   quantity: number;
+  /** Retail price per unit (INR) — Qikink records it on the line item. */
+  price?: number;
   /** Print-ready production file URL. */
   printFileUrl?: string;
   /** Mockup for provider reference. */
@@ -42,6 +44,8 @@ export interface SubmitOrderInput {
   items: FulfillmentLineItem[];
   shippingAddress: FulfillmentAddress;
   customer: { name: string; email: string; phone?: string };
+  /** Total order value (INR). Qikink records it for invoicing/COD. */
+  totalOrderValue?: number;
   /** Idempotency key the adapter should pass to the provider if supported. */
   idempotencyKey: string;
 }

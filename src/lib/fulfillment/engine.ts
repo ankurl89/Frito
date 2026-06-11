@@ -61,15 +61,18 @@ export async function submitOrder(orderId: string): Promise<void> {
     return; // already submitted — idempotent no-op
   }
 
-  const variant = (order.variant || {}) as { size?: string; color?: string };
+  const variant = (order.variant || {}) as { size?: string; color?: string; price?: number };
   const placement = (product.placement || {}) as { key?: string };
+  const quantity = order.quantity || 1;
+  const unitPrice = variant.price ?? product.sell_price ?? 0;
   const items: FulfillmentLineItem[] = [{
     catalogProductId: product.qikink_product_id || product.sku,
     productName: product.name,
     size: variant.size,
     color: variant.color,
     placementKey: placement.key,
-    quantity: order.quantity || 1,
+    quantity,
+    price: unitPrice,
     printFileUrl: product.production_file_url || product.artwork_url,
     mockupUrl: product.mockup_url,
   }];
@@ -82,6 +85,7 @@ export async function submitOrder(orderId: string): Promise<void> {
     items,
     shippingAddress: addr,
     customer: { name: order.customer_name, email: order.customer_email, phone: order.customer_phone },
+    totalOrderValue: order.total_amount ?? unitPrice * quantity,
     idempotencyKey: orderId,
   });
 
