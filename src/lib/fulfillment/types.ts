@@ -22,10 +22,14 @@ export interface FulfillmentAddress {
 }
 
 export interface FulfillmentLineItem {
-  /** Provider's product/SKU identifier (e.g. Qikink product id). */
-  providerSku: string;
+  /** OUR catalog product id (e.g. "QK-001"). Each adapter maps it to its own SKU. */
+  catalogProductId: string;
   productName: string;
   size?: string;
+  /** Garment color name (Black/White/Beige/Navy). */
+  color?: string;
+  /** Named print placement (front_center / back_center / front_pocket / full_back). */
+  placementKey?: string;
   quantity: number;
   /** Print-ready production file URL. */
   printFileUrl?: string;

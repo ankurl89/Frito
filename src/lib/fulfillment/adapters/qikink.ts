@@ -13,10 +13,13 @@ import {
   TrackingInfo, CanonicalEvent,
 } from "../types";
 import { OrderState } from "@/lib/orders/states";
+import { QIKINK_BASE, isQikinkSandbox, qikinkAuthHeaders, clearQikinkTokenCache } from "./qikink-auth";
+import {
+  resolveQikinkSku, resolveQikinkPlacement, resolveQikinkPrintTypeId, isQikinkCatalogMapped,
+} from "../qikink-sku";
 
-const QIKINK_BASE = "https://api.qikink.com/api";
-
-// Qikink status string → canonical order state.
+// Qikink status string → canonical order state. Covers both production statuses
+// and post-dispatch shipping statuses. VERIFY exact strings against the sandbox.
 const STATUS_MAP: Record<string, OrderState> = {
   "order confirmed": "submitted_to_provider",
   "confirmed": "submitted_to_provider",
@@ -24,18 +27,23 @@ const STATUS_MAP: Record<string, OrderState> = {
   "printing": "in_production",
   "ready to ship": "packed",
   "packed": "packed",
+  "order picked up": "shipped",
+  "in-transit": "shipped",
+  "in transit": "shipped",
   "shipped": "shipped",
   "out for delivery": "shipped",
   "delivered": "delivered",
   "cancelled": "cancelled",
   "rto": "failed",
+  "rto initiated": "failed",
+  "rto (return to origin) initiated": "failed",
 };
 
 export class QikinkAdapter implements FulfillmentProvider {
   readonly name = "qikink";
 
   private get sandbox(): boolean {
-    return !process.env.QIKINK_CLIENT_ID || !process.env.QIKINK_API_TOKEN;
+    return isQikinkSandbox();
   }
 
   getCapabilities(): ProviderCapabilities {
@@ -57,7 +65,14 @@ export class QikinkAdapter implements FulfillmentProvider {
       };
     }
 
-    // Real Qikink Create Order call.
+    // Guard: never submit a live order with an unmapped catalog (would send a
+    // garbage SKU). Fail loudly so the job retries/dead-letters instead.
+    if (!isQikinkCatalogMapped()) {
+      throw new Error("Qikink catalog is not mapped yet — fill GARMENT_CODE/COLOR_CODE in qikink-sku.ts");
+    }
+
+    // Real Qikink Create Order call. Resolve each line to a real Qikink SKU,
+    // placement, and print type from our neutral catalog identifiers.
     const body = {
       order_number: input.orderId,
       qikink_shipping: "1",
@@ -65,10 +80,16 @@ export class QikinkAdapter implements FulfillmentProvider {
       line_items: input.items.map(i => ({
         search_from_my_products: 0,
         quantity: String(i.quantity),
-        print_type_id: 1,
+        print_type_id: resolveQikinkPrintTypeId(i.catalogProductId),
         price: "0",
-        sku: i.providerSku,
-        designs: i.printFileUrl ? [{ design_link: i.printFileUrl, mockup_link: i.mockupUrl }] : [],
+        sku: resolveQikinkSku(i.catalogProductId, i.color || "", i.size || ""),
+        designs: i.printFileUrl
+          ? [{
+              design_code: resolveQikinkPlacement(i.placementKey),
+              design_link: i.printFileUrl,
+              mockup_link: i.mockupUrl,
+            }]
+          : [],
       })),
       shipping_address: {
         first_name: input.shippingAddress.name,
@@ -83,17 +104,23 @@ export class QikinkAdapter implements FulfillmentProvider {
       },
     };
 
-    const res = await fetch(`${QIKINK_BASE}/order/create`, {
+    const submit = async () => fetch(`${QIKINK_BASE}/api/order/create`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ClientId: process.env.QIKINK_CLIENT_ID!,
-        Accesstoken: process.env.QIKINK_API_TOKEN!,
         // Idempotency: Qikink dedupes on order_number, so resubmits are safe.
         "Idempotency-Key": input.idempotencyKey,
+        ...(await qikinkAuthHeaders()),
       },
       body: JSON.stringify(body),
     });
+
+    let res = await submit();
+    // A stale cached token → 401. Clear it and retry once with a fresh token.
+    if (res.status === 401) {
+      clearQikinkTokenCache();
+      res = await submit();
+    }
 
     const raw = await res.json();
     if (!res.ok) throw new Error(`Qikink submit failed (${res.status}): ${JSON.stringify(raw).slice(0, 200)}`);
@@ -105,11 +132,8 @@ export class QikinkAdapter implements FulfillmentProvider {
 
   async getTracking(providerOrderId: string): Promise<TrackingInfo> {
     if (this.sandbox) return { raw: { sandbox: true } };
-    const res = await fetch(`${QIKINK_BASE}/order/${providerOrderId}`, {
-      headers: {
-        ClientId: process.env.QIKINK_CLIENT_ID!,
-        Accesstoken: process.env.QIKINK_API_TOKEN!,
-      },
+    const res = await fetch(`${QIKINK_BASE}/api/order/${providerOrderId}`, {
+      headers: await qikinkAuthHeaders(),
     });
     const raw = await res.json();
     const status = String(raw.order_status || raw.status || "").toLowerCase();
@@ -124,12 +148,9 @@ export class QikinkAdapter implements FulfillmentProvider {
 
   async cancelOrder(providerOrderId: string): Promise<void> {
     if (this.sandbox) return;
-    await fetch(`${QIKINK_BASE}/order/cancel/${providerOrderId}`, {
+    await fetch(`${QIKINK_BASE}/api/order/cancel/${providerOrderId}`, {
       method: "POST",
-      headers: {
-        ClientId: process.env.QIKINK_CLIENT_ID!,
-        Accesstoken: process.env.QIKINK_API_TOKEN!,
-      },
+      headers: await qikinkAuthHeaders(),
     });
   }
 

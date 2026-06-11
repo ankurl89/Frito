@@ -61,11 +61,14 @@ export async function submitOrder(orderId: string): Promise<void> {
     return; // already submitted — idempotent no-op
   }
 
-  const variant = (order.variant || {}) as { size?: string };
+  const variant = (order.variant || {}) as { size?: string; color?: string };
+  const placement = (product.placement || {}) as { key?: string };
   const items: FulfillmentLineItem[] = [{
-    providerSku: product.qikink_product_id || product.sku,
+    catalogProductId: product.qikink_product_id || product.sku,
     productName: product.name,
     size: variant.size,
+    color: variant.color,
+    placementKey: placement.key,
     quantity: order.quantity || 1,
     printFileUrl: product.production_file_url || product.artwork_url,
     mockupUrl: product.mockup_url,
