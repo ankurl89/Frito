@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, PartyPopper } from "lucide-react";
 
 interface FirstSaleData {
   revenue: number;
@@ -95,7 +95,9 @@ export default function FirstSaleCelebration() {
         </button>
 
         <div className="relative">
-          <p className="text-7xl mb-4">🎉</p>
+          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-white/15 ring-1 ring-white/30 backdrop-blur flex items-center justify-center">
+            <PartyPopper size={36} className="text-white" />
+          </div>
           <p className="font-mono text-[10px] tracking-widest text-violet-300 mb-2">FIRST SALE</p>
           <h2 className="text-4xl font-black tracking-tight mb-3">You did it.</h2>
           <p className="text-violet-200 mb-6">Someone, somewhere, just paid for something you made.</p>

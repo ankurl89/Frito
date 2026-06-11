@@ -10,8 +10,50 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ACHIEVEMENTS, Achievement, Level } from "@/lib/founder-constants";
-import { Flame, Trophy, ChevronRight, Check } from "lucide-react";
+import {
+  Flame, Trophy, ChevronRight, Check, Lock,
+  Sparkles, Palette, Package, Rocket, Layers, Crown,
+  PartyPopper, IndianRupee, Gem, Zap, Moon, Award, type LucideIcon,
+} from "lucide-react";
 import toast from "react-hot-toast";
+
+/** Premium line-icon + accent gradient per achievement (replaces flat emoji). */
+const ACHIEVEMENT_ICON: Record<string, LucideIcon> = {
+  signed_up: Sparkles,
+  first_brand: Palette,
+  first_product: Package,
+  first_publish: Rocket,
+  catalog_5: Layers,
+  catalog_25: Crown,
+  first_sale: PartyPopper,
+  revenue_1k: IndianRupee,
+  revenue_10k: Gem,
+  revenue_1l: Trophy,
+  streak_7: Flame,
+  streak_30: Zap,
+  night_owl: Moon,
+};
+
+const CATEGORY_ACCENT: Record<Achievement["category"], string> = {
+  founder: "from-violet-500 to-indigo-600",
+  product: "from-sky-500 to-blue-600",
+  sales:   "from-amber-400 to-yellow-600",
+  habit:   "from-orange-500 to-rose-600",
+};
+
+/** A premium achievement medallion: gradient disc + line icon + subtle ring. */
+function Medallion({ achievement, size = 36 }: { achievement: Achievement; size?: number }) {
+  const Icon = ACHIEVEMENT_ICON[achievement.key] || Award;
+  const accent = CATEGORY_ACCENT[achievement.category] || "from-zinc-400 to-zinc-600";
+  return (
+    <div
+      className={`rounded-full bg-gradient-to-br ${accent} flex items-center justify-center ring-1 ring-white/30 shadow-sm`}
+      style={{ width: size, height: size }}
+    >
+      <Icon size={Math.round(size * 0.46)} className="text-white" strokeWidth={2.2} />
+    </div>
+  );
+}
 
 interface FounderSnapshot {
   profile: { xp: number; level: number; current_streak: number; longest_streak: number };
@@ -151,22 +193,24 @@ export default function FounderStatus() {
           </div>
           {unlocked.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-3xl mb-2 grayscale opacity-30">🏆</p>
+              <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-3">
+                <Trophy size={20} className="text-zinc-300" />
+              </div>
               <p className="font-mono text-[10px] tracking-widest text-zinc-400">NONE UNLOCKED YET</p>
               <p className="text-xs text-zinc-500 mt-2">Complete your first milestone to earn one</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {unlocked.slice(0, 9).map(a => (
-                <div key={a.key} className="aspect-square bg-zinc-50 rounded-xl flex flex-col items-center justify-center p-2" title={a.description}>
-                  <span className="text-2xl mb-1">{a.icon}</span>
+                <div key={a.key} className="aspect-square bg-zinc-50 border border-zinc-100 rounded-xl flex flex-col items-center justify-center p-2 gap-1.5" title={a.description}>
+                  <Medallion achievement={a} size={34} />
                   <span className="font-mono text-[8px] tracking-wider text-zinc-500 text-center leading-tight">{a.name}</span>
                 </div>
               ))}
               {/* Locked slots to suggest collection completeness */}
               {Array.from({ length: Math.max(0, 9 - unlocked.length) }).slice(0, 3).map((_, i) => (
-                <div key={`locked-${i}`} className="aspect-square bg-zinc-50/50 rounded-xl flex items-center justify-center opacity-30">
-                  <span className="text-xl">🔒</span>
+                <div key={`locked-${i}`} className="aspect-square bg-zinc-50/50 border border-dashed border-zinc-200 rounded-xl flex items-center justify-center">
+                  <Lock size={15} className="text-zinc-300" />
                 </div>
               ))}
             </div>
@@ -180,8 +224,8 @@ export default function FounderStatus() {
 function AchievementToast({ achievement, visible }: { achievement: Achievement; visible: boolean }) {
   return (
     <div className={`${visible ? "animate-in" : ""} bg-zinc-900 text-white rounded-2xl shadow-2xl border border-zinc-800 p-4 flex items-center gap-4 max-w-sm`}>
-      <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-yellow-400 rounded-xl flex items-center justify-center flex-shrink-0">
-        <span className="text-3xl">{achievement.icon}</span>
+      <div className="flex-shrink-0">
+        <Medallion achievement={achievement} size={56} />
       </div>
       <div>
         <p className="font-mono text-[10px] tracking-widest text-violet-400 mb-0.5">ACHIEVEMENT UNLOCKED</p>
