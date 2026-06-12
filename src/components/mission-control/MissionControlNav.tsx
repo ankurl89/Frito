@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { StaffContext } from "@/lib/mission-control/auth";
 import { ROLE_META, hasPermission, Permission } from "@/lib/mission-control/rbac";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, ShoppingCart, Truck, Users, UserCircle,
-  DollarSign, Boxes, ShieldAlert, ScrollText, Bot, ChevronLeft,
+  DollarSign, Boxes, ShieldAlert, ScrollText, Bot, ChevronLeft, LogOut,
 } from "lucide-react";
 
 const NAV: { label: string; href: string; icon: React.ElementType; perm: Permission; soon?: boolean }[] = [
@@ -25,8 +26,16 @@ const NAV: { label: string; href: string; icon: React.ElementType; perm: Permiss
 
 export default function MissionControlNav({ staff }: { staff: StaffContext }) {
   const pathname = usePathname();
+  const router = useRouter();
   const roleMeta = ROLE_META[staff.role];
   const visible = NAV.filter(n => hasPermission(staff.role, n.perm));
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/mission-control/login");
+    router.refresh();
+  }
 
   return (
     <aside className="w-60 bg-black border-r border-zinc-800 flex flex-col flex-shrink-0 h-screen sticky top-0">
@@ -72,6 +81,10 @@ export default function MissionControlNav({ staff }: { staff: StaffContext }) {
           <ChevronLeft size={13} />
           <span className="font-mono text-[10px] tracking-widest">EXIT TO APP</span>
         </Link>
+        <button onClick={signOut} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-500 hover:bg-red-950/40 hover:text-red-300 transition-colors">
+          <LogOut size={13} />
+          <span className="font-mono text-[10px] tracking-widest">SIGN OUT</span>
+        </button>
       </div>
     </aside>
   );

@@ -8,6 +8,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { StaffRole, Permission, hasPermission } from "./rbac";
 
 export interface StaffContext {
@@ -19,11 +20,17 @@ export interface StaffContext {
 
 /** Returns the staff context for the current session, or null if not staff. */
 export async function getStaff(): Promise<StaffContext | null> {
+  // 1) Authenticate identity via the user session (verified server-side).
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: staff } = await supabase
+  // 2) Look up the staff role with the service client, keyed by the VERIFIED
+  //    user id. Using the service client here makes the gate immune to RLS
+  //    misconfiguration on staff_users (a self-read policy isn't required) —
+  //    it's safe because the id comes from the authenticated session, not input.
+  const svc = createServiceClient();
+  const { data: staff } = await svc
     .from("staff_users")
     .select("role, display_name")
     .eq("id", user.id)
