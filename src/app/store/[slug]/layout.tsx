@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { BrandDNA, ColorPalette } from "@/lib/types";
 import { readableForeground, ensureReadable } from "@/lib/color";
+import { fontStack, googleFontsHref, knownFont } from "@/lib/store-fonts";
 import StorefrontHeader from "@/components/storefront/StorefrontHeader";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 
@@ -50,6 +51,14 @@ export default async function StorefrontLayout({
   // --brand-text, which is now contrast-safe against bg (and thus the surface).
   const surface = `color-mix(in srgb, ${text} 4%, ${bg})`;
 
+  // Fonts: prefer the merchant-chosen families (top-level typography, set by the
+  // Store Settings editor — stable across Brand Book regen), then the Brand
+  // Book's suggestion, then a safe default. Load them from Google Fonts so they
+  // actually render.
+  const headlineFamily = knownFont(b.typography?.heading) || knownFont(b.brand_book?.typography_detail?.headline_font);
+  const bodyFamily = knownFont(b.typography?.body) || knownFont(b.brand_book?.typography_detail?.body_font);
+  const fontsHref = googleFontsHref([headlineFamily, bodyFamily]);
+
   // Compute readable foreground colors for each surface — so light brand
   // colors (e.g. cream/pastel) get dark text instead of invisible white.
   const themeStyle = {
@@ -62,12 +71,14 @@ export default async function StorefrontLayout({
     "--brand-bg": bg,
     "--brand-text": text,
     "--brand-surface": surface,
-    "--brand-headline-font": b.brand_book?.typography_detail?.headline_font || "Inter, system-ui, sans-serif",
-    "--brand-body-font": b.brand_book?.typography_detail?.body_font || "Inter, system-ui, sans-serif",
+    "--brand-headline-font": fontStack(headlineFamily),
+    "--brand-body-font": fontStack(bodyFamily),
+    fontFamily: "var(--brand-body-font)",
   } as React.CSSProperties;
 
   return (
     <div style={themeStyle} className="storefront-root min-h-screen flex flex-col" data-brand={b.slug}>
+      {fontsHref && <link rel="stylesheet" href={fontsHref} />}
       <StorefrontHeader brand={b} />
       <main className="flex-1">{children}</main>
       <StorefrontFooter brand={b} />

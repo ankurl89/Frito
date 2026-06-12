@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandDNA } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store, Palette } from "lucide-react";
 import { useState } from "react";
 import DevWorkerTicker from "@/components/DevWorkerTicker";
 
@@ -20,6 +20,7 @@ const navItems = (brandId: string) => [
   { label: "OVERVIEW", href: `/dashboard/${brandId}`, icon: LayoutDashboard },
   { label: "BRAND BOOK", href: `/dashboard/${brandId}/brand`, icon: BookOpen },
   { label: "PRODUCTS", href: `/dashboard/${brandId}/products`, icon: Package },
+  { label: "CUSTOMIZE", href: `/dashboard/${brandId}/settings`, icon: Palette },
   { label: "ORDERS", href: `/dashboard/${brandId}/orders`, icon: ShoppingBag },
   { label: "ANALYTICS", href: `/dashboard/${brandId}/analytics`, icon: BarChart2 },
 ];
