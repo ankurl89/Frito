@@ -25,7 +25,7 @@ export default async function OrdersPage({ params }: { params: Promise<{ brandId
       <div className="mb-10">
         <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-2">/ ORDER MANAGEMENT /</p>
         <h1 className="text-3xl font-black text-zinc-900 tracking-tight">Orders</h1>
-        <p className="text-zinc-400 text-sm mt-1">All orders auto-fulfill through Qikink — nothing manual.</p>
+        <p className="text-zinc-400 text-sm mt-1">All orders auto-fulfill through our production network — nothing manual.</p>
       </div>
 
       {/* Stats */}

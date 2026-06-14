@@ -547,7 +547,7 @@ function FAQ() {
     { q: "Do I need inventory?", a: "No. Every product is printed on-demand when a customer orders. You never hold stock or pay upfront." },
     { q: "Do I need Shopify experience?", a: "No. Frito gives you a hosted storefront out of the box. Shopify export is available as an upgrade." },
     { q: "Can I use my own designs?", a: "Yes. You can upload your own artwork or let AI generate designs from your brand brief." },
-    { q: "How does fulfillment work?", a: "Orders automatically route to our production partners (Qikink). They print, pack, and ship directly to your customer." },
+    { q: "How does fulfillment work?", a: "Orders automatically route to our production network. They print, pack, and ship directly to your customer — you never touch inventory." },
     { q: "When do I get paid?", a: "Profits are settled weekly to your bank account after deducting production and platform fees." },
     { q: "Can I sell internationally?", a: "International shipping is on our roadmap. Currently we support all of India with Delhivery, Bluedart, and Xpressbees." },
   ];

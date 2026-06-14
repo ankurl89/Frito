@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { listProviders, getProvider } from "@/lib/fulfillment/registry";
+import { listProviders, getProvider, providerLabel } from "@/lib/fulfillment/registry";
 import { getStaff } from "@/lib/mission-control/auth";
 import { hasPermission } from "@/lib/mission-control/rbac";
 import DeadLetterActions from "@/components/mission-control/DeadLetterActions";
@@ -57,7 +57,7 @@ export default async function FulfillmentOpsPage() {
                   <Truck size={16} className="text-zinc-400" />
                 </div>
                 <div>
-                  <p className="font-black capitalize">{p.name}</p>
+                  <p className="font-black">{providerLabel(p.name)}</p>
                   <p className="font-mono text-[9px] tracking-wider text-zinc-600">
                     {p.sandbox ? "SANDBOX MODE" : "LIVE"}
                   </p>

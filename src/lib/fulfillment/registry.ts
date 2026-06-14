@@ -26,3 +26,16 @@ export function getProvider(name?: string | null): FulfillmentProvider {
 export function listProviders(): string[] {
   return Object.keys(REGISTRY);
 }
+
+/**
+ * Neutral display label for a provider — keeps supplier identities out of the
+ * UI (even staff-facing Mission Control) while staying distinguishable for ops.
+ */
+const PROVIDER_LABELS: Record<string, string> = {
+  qikink: "Production Partner A",
+  printrove: "Production Partner B",
+};
+
+export function providerLabel(name?: string | null): string {
+  return PROVIDER_LABELS[name || ""] || "Production Partner";
+}

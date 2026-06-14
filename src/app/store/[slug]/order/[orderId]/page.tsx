@@ -1,5 +1,5 @@
 /**
- * Customer Order Tracking — completely hides Qikink and any backend complexity.
+ * Customer Order Tracking — completely hides the fulfillment provider and any backend complexity.
  *
  * Shows a 5-step status pipeline:
  *   Order Received → In Production → Packed → Shipped → Delivered

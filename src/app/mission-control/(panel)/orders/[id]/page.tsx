@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getStaff } from "@/lib/mission-control/auth";
 import { hasPermission } from "@/lib/mission-control/rbac";
 import { ORDER_STATUS_META } from "@/lib/orders/states";
+import { providerLabel } from "@/lib/fulfillment/registry";
 import { ArrowLeft } from "lucide-react";
 import OrderActions from "@/components/mission-control/OrderActions";
 
@@ -82,7 +83,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
           {/* Provider payload */}
           {fulfillment && (
-            <Panel title={`PROVIDER PAYLOAD · ${fulfillment.provider.toUpperCase()}${fulfillment.sandbox ? " · SANDBOX" : ""}`}>
+            <Panel title={`PROVIDER PAYLOAD · ${providerLabel(fulfillment.provider).toUpperCase()}${fulfillment.sandbox ? " · SANDBOX" : ""}`}>
               <div className="space-y-2 text-xs mb-3">
                 <Row k="Provider Order ID" v={fulfillment.provider_order_id || "—"} mono />
                 <Row k="Status" v={fulfillment.status} />
