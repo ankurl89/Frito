@@ -14,9 +14,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BrandDNA, ColorPalette } from "@/lib/types";
 import { STORE_FONTS, googleFontsHref, fontStack, knownFont } from "@/lib/store-fonts";
+import { STORE_DOMAIN, subdomainUrl } from "@/lib/domains";
 import { contrastRatio } from "@/lib/color";
-import { ArrowLeft, Loader2, Save, ExternalLink, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Save, ExternalLink, AlertTriangle, Globe, Check, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+
+interface DomainDns { type: string; name: string; value: string }
 
 const PALETTE_FIELDS: { key: keyof ColorPalette; label: string }[] = [
   { key: "primary",    label: "Primary" },
@@ -39,8 +42,16 @@ export default function StoreSettingsPage() {
   const [headlineFont, setHeadlineFont] = useState("Inter");
   const [bodyFont, setBodyFont] = useState("Inter");
 
+  // Domain state
+  const [connectedDomain, setConnectedDomain] = useState<string | null>(null);
+  const [domainStatus, setDomainStatus] = useState<string | null>(null);
+  const [domainInput, setDomainInput] = useState("");
+  const [dns, setDns] = useState<DomainDns | null>(null);
+  const [domainBusy, setDomainBusy] = useState(false);
+
   const load = useCallback(async () => {
-    const b: BrandDNA = await fetch(`/api/brands/${brandId}`).then(r => r.json());
+    const b: BrandDNA & { custom_domain?: string; domain_status?: string } =
+      await fetch(`/api/brands/${brandId}`).then(r => r.json());
     setBrand(b);
     setName(b.name || "");
     setTagline(b.tagline || "");
@@ -48,7 +59,41 @@ export default function StoreSettingsPage() {
     setPalette({ ...(b.palette || {}) } as ColorPalette);
     setHeadlineFont(knownFont(b.typography?.heading) || knownFont(b.brand_book?.typography_detail?.headline_font) || "Inter");
     setBodyFont(knownFont(b.typography?.body) || knownFont(b.brand_book?.typography_detail?.body_font) || "Inter");
+    setConnectedDomain(b.custom_domain || null);
+    setDomainStatus(b.domain_status || null);
   }, [brandId]);
+
+  async function connectDomain() {
+    setDomainBusy(true);
+    try {
+      const res = await fetch("/api/domains", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandId, domain: domainInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not connect domain");
+      setConnectedDomain(data.domain);
+      setDomainStatus(data.status);
+      setDns(data.dns);
+      setDomainInput("");
+      toast.success("Domain saved — add the DNS record to finish");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setDomainBusy(false);
+    }
+  }
+
+  async function removeDomain() {
+    setDomainBusy(true);
+    try {
+      await fetch(`/api/domains?brandId=${brandId}`, { method: "DELETE" });
+      setConnectedDomain(null); setDomainStatus(null); setDns(null);
+      toast.success("Custom domain removed");
+    } finally {
+      setDomainBusy(false);
+    }
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -183,6 +228,63 @@ export default function StoreSettingsPage() {
                 <FontSelect value={bodyFont} onChange={setBodyFont} />
                 <p className="mt-2 text-sm text-zinc-600" style={{ fontFamily: fontStack(bodyFont) }}>The quick brown fox jumps over the lazy dog.</p>
               </Field>
+            </div>
+          </Card>
+
+          {/* Domain */}
+          <Card label="DOMAIN">
+            {/* Branded subdomain */}
+            <div>
+              <span className="block font-mono text-[10px] tracking-widest text-zinc-400 mb-1.5 uppercase">Your store address</span>
+              {slug && STORE_DOMAIN ? (
+                <a href={subdomainUrl(slug) || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 hover:border-zinc-400 transition-colors">
+                  <Globe size={13} className="text-violet-600" /> {slug}.{STORE_DOMAIN} <ExternalLink size={11} className="text-zinc-400" />
+                </a>
+              ) : (
+                <p className="text-sm text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2">
+                  Your branded address (<span className="font-mono">{slug || "your-store"}.&lt;domain&gt;</span>) activates once your store domain is configured.
+                </p>
+              )}
+            </div>
+
+            {/* Custom domain */}
+            <div>
+              <span className="block font-mono text-[10px] tracking-widest text-zinc-400 mb-1.5 uppercase">Custom domain</span>
+              {connectedDomain ? (
+                <div className="border border-zinc-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <span className="inline-flex items-center gap-2 font-bold text-sm text-zinc-900">
+                      <Globe size={14} className="text-violet-600" /> {connectedDomain}
+                      <span className={`font-mono text-[9px] tracking-wider border rounded px-1.5 py-0.5 ${domainStatus === "active" ? "border-green-300 text-green-700 bg-green-50" : "border-amber-300 text-amber-700 bg-amber-50"}`}>
+                        {(domainStatus || "pending").toUpperCase()}
+                      </span>
+                    </span>
+                    <button onClick={removeDomain} disabled={domainBusy} className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 disabled:opacity-50">
+                      <Trash2 size={12} /> Remove
+                    </button>
+                  </div>
+                  <div className="mt-3 bg-zinc-50 border border-zinc-200 rounded-xl p-3">
+                    <p className="font-mono text-[9px] tracking-widest text-zinc-400 mb-2">ADD THIS DNS RECORD AT YOUR REGISTRAR</p>
+                    {dns ? (
+                      <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
+                        <div><span className="text-zinc-400">TYPE</span><br /><b>{dns.type}</b></div>
+                        <div><span className="text-zinc-400">NAME</span><br /><b>{dns.name}</b></div>
+                        <div className="truncate"><span className="text-zinc-400">VALUE</span><br /><b>{dns.value}</b></div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-zinc-500">Subdomains: CNAME → <span className="font-mono">cname.vercel-dns.com</span>. Apex: A → <span className="font-mono">76.76.21.21</span>.</p>
+                    )}
+                    <p className="flex items-center gap-1.5 text-[11px] text-zinc-500 mt-2"><Check size={11} className="text-green-500" /> Goes live automatically once DNS propagates (a few minutes to a few hours).</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input value={domainInput} onChange={e => setDomainInput(e.target.value)} placeholder="shop.yourbrand.com" className={inputCls} />
+                  <button onClick={connectDomain} disabled={domainBusy || !domainInput} className="bg-zinc-900 text-white font-bold text-sm px-4 rounded-xl hover:bg-violet-600 transition-colors disabled:opacity-50 whitespace-nowrap">
+                    {domainBusy ? <Loader2 size={14} className="animate-spin" /> : "Connect"}
+                  </button>
+                </div>
+              )}
             </div>
           </Card>
         </div>
