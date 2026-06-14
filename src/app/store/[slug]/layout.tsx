@@ -38,6 +38,22 @@ export default async function StorefrontLayout({
   if (!brand) notFound();
 
   const b = brand as BrandDNA;
+
+  // Suspended stores are taken fully offline by Mission Control. Block the
+  // entire storefront (this layout wraps every store route) with a neutral
+  // message — reversible by reinstating the merchant.
+  if (b.status === "suspended") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 text-zinc-900 px-6">
+        <div className="text-center max-w-md">
+          <p className="font-mono text-[11px] tracking-widest text-zinc-400 mb-3">STORE UNAVAILABLE</p>
+          <h1 className="text-2xl font-black tracking-tight mb-2">This store is temporarily unavailable</h1>
+          <p className="text-sm text-zinc-500">Please check back soon.</p>
+        </div>
+      </div>
+    );
+  }
+
   const palette = (b.palette || {}) as ColorPalette;
 
   const primary = palette.primary || "#7c3aed";

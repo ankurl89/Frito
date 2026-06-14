@@ -25,7 +25,7 @@ export interface BrandDNA {
   slug?: string;
   storefront_config?: Record<string, unknown>;
 
-  status: "draft" | "active";
+  status: "draft" | "active" | "suspended";
   created_at: string;
   updated_at: string;
 }

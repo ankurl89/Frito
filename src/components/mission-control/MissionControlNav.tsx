@@ -15,12 +15,12 @@ const NAV: { label: string; href: string; icon: React.ElementType; perm: Permiss
   { label: "Executive",    href: "/mission-control",              icon: LayoutDashboard, perm: "view_executive" },
   { label: "Orders",       href: "/mission-control/orders",       icon: ShoppingCart,    perm: "view_orders" },
   { label: "Fulfillment",  href: "/mission-control/fulfillment",  icon: Truck,           perm: "view_fulfillment" },
-  { label: "Merchants",    href: "/mission-control/merchants",    icon: Users,           perm: "view_merchants", soon: true },
-  { label: "Customers",    href: "/mission-control/customers",    icon: UserCircle,      perm: "view_customers", soon: true },
+  { label: "Merchants",    href: "/mission-control/merchants",    icon: Users,           perm: "view_merchants" },
+  { label: "Customers",    href: "/mission-control/customers",    icon: UserCircle,      perm: "view_customers" },
+  { label: "Audit",        href: "/mission-control/audit",        icon: ScrollText,      perm: "view_audit" },
   { label: "Pricing",      href: "/mission-control/pricing",      icon: DollarSign,      perm: "view_pricing", soon: true },
   { label: "Inventory",    href: "/mission-control/inventory",    icon: Boxes,           perm: "view_inventory", soon: true },
   { label: "Risk",         href: "/mission-control/risk",         icon: ShieldAlert,     perm: "view_fulfillment", soon: true },
-  { label: "Audit",        href: "/mission-control/audit",        icon: ScrollText,      perm: "view_audit", soon: true },
   { label: "Copilot",      href: "/mission-control/copilot",      icon: Bot,             perm: "view_executive", soon: true },
 ];
 
