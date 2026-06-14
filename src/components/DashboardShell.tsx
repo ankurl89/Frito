@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandDNA } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store, Palette } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store, Palette, GraduationCap } from "lucide-react";
 import { useState } from "react";
 import DevWorkerTicker from "@/components/DevWorkerTicker";
 
@@ -23,6 +23,7 @@ const navItems = (brandId: string) => [
   { label: "CUSTOMIZE", href: `/dashboard/${brandId}/settings`, icon: Palette },
   { label: "ORDERS", href: `/dashboard/${brandId}/orders`, icon: ShoppingBag },
   { label: "ANALYTICS", href: `/dashboard/${brandId}/analytics`, icon: BarChart2 },
+  { label: "PLAYBOOK", href: `/dashboard/${brandId}/guides`, icon: GraduationCap },
 ];
 
 export default function DashboardShell({ brand, allBrands, children, isStaff }: Props) {
