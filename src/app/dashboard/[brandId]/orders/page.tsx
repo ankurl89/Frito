@@ -54,6 +54,8 @@ export default async function OrdersPage({ params }: { params: Promise<{ brandId
         </div>
       ) : (
         <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+          <div className="min-w-[680px]">
           {/* Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-zinc-50 border-b border-zinc-100">
             {["ORDER", "CUSTOMER", "STATUS", "TRACKING", "AMOUNT", "PROFIT"].map(h => (
@@ -103,6 +105,8 @@ export default async function OrdersPage({ params }: { params: Promise<{ brandId
               </div>
             );
           })}
+          </div>
+          </div>
         </div>
       )}
     </div>

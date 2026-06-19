@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandDNA } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store, Palette, GraduationCap } from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, Package, ShoppingBag, BarChart2, BookOpen, Plus, LogOut, ChevronDown, Radar, Store, Palette, GraduationCap, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import DevWorkerTicker from "@/components/DevWorkerTicker";
 
 interface Props {
@@ -30,6 +30,10 @@ export default function DashboardShell({ brand, allBrands, children, isStaff }: 
   const pathname = usePathname();
   const router = useRouter();
   const [brandMenuOpen, setBrandMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -44,8 +48,44 @@ export default function DashboardShell({ brand, allBrands, children, isStaff }: 
   return (
     <div className="flex h-screen bg-[#F5F5F0] overflow-hidden">
       <DevWorkerTicker />
-      {/* Sidebar — dark */}
-      <aside className="w-56 bg-zinc-900 flex flex-col flex-shrink-0">
+
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 inset-x-0 z-40 h-14 bg-zinc-900 flex items-center justify-between px-4">
+        <Link href="/" className="font-black text-white tracking-tight text-lg">
+          FRITO<span className="text-violet-500">.</span>
+        </Link>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+          className="w-10 h-10 -mr-2 flex items-center justify-center text-zinc-300 hover:text-white"
+        >
+          <Menu size={20} />
+        </button>
+      </div>
+
+      {/* Mobile drawer backdrop */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="md:hidden fixed inset-0 z-40 bg-black/50"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar — dark. Static on desktop, slide-in drawer on mobile. */}
+      <aside className={cn(
+        "w-56 bg-zinc-900 flex flex-col flex-shrink-0 z-50",
+        "fixed inset-y-0 left-0 transition-transform duration-300 md:static md:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        {/* Close button (mobile only) */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close menu"
+          className="md:hidden absolute top-4 right-3 w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-white"
+        >
+          <X size={18} />
+        </button>
         {/* Logo */}
         <div className="px-5 pt-6 pb-5 border-b border-zinc-800">
           <Link href="/" className="font-black text-white tracking-tight text-xl">
@@ -161,7 +201,7 @@ export default function DashboardShell({ brand, allBrands, children, isStaff }: 
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
         {children}
       </main>
     </div>

@@ -168,7 +168,7 @@ function LiveCounter() {
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         <div>
           <p className="font-mono text-xs tracking-widest text-zinc-700 mb-3">· LIVE · BRANDS CREATED TODAY</p>
-          <p className="text-[7rem] font-black leading-none text-zinc-900">4,225</p>
+          <p className="text-7xl sm:text-8xl md:text-[7rem] font-black leading-none text-zinc-900">4,225</p>
           <p className="text-zinc-700 mt-3 max-w-xs">A new brand goes live on Frito roughly every 4 seconds. Yours could be next.</p>
           <Link href="/signup" className="mt-6 inline-flex items-center font-semibold text-zinc-900 border-2 border-zinc-900 rounded-full px-6 py-2.5 hover:bg-zinc-900 hover:text-yellow-300 transition-colors">
             Join the drop →
@@ -255,12 +255,12 @@ function HowItWorks() {
         </div>
         <div className="space-y-0">
           {steps.map((step, i) => (
-            <div key={i} className="flex gap-8 items-start py-8 border-b border-zinc-100 last:border-0">
-              <div className="flex-shrink-0 w-16">
-                <span className="font-mono text-xs text-zinc-400">{step.num}</span>
-              </div>
-              <div className="flex-shrink-0 w-24">
-                <span className="text-[10px] font-black tracking-wider bg-violet-100 text-violet-700 px-2 py-1 rounded">{step.tag}</span>
+            <div key={i} className="flex flex-col sm:flex-row sm:gap-8 sm:items-start py-8 border-b border-zinc-100 last:border-0">
+              <div className="flex items-center gap-3 mb-3 sm:mb-0 sm:gap-8">
+                <span className="font-mono text-xs text-zinc-400 sm:flex-shrink-0 sm:w-16">{step.num}</span>
+                <div className="sm:flex-shrink-0 sm:w-24">
+                  <span className="text-[10px] font-black tracking-wider bg-violet-100 text-violet-700 px-2 py-1 rounded">{step.tag}</span>
+                </div>
               </div>
               <div>
                 <h3 className="text-xl font-black text-zinc-900 mb-1">{step.title}</h3>
