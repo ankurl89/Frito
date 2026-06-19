@@ -54,7 +54,7 @@ export default async function StorefrontHome({ params }: { params: Promise<{ slu
             <div>
               <p className="font-mono text-[11px] tracking-widest mb-4 opacity-60">{b.niche?.toUpperCase()}</p>
               <h1
-                className="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight mb-6"
+                className="text-4xl sm:text-5xl md:text-7xl font-black leading-[0.98] sm:leading-[0.95] tracking-tight mb-6 break-words hyphens-auto"
                 style={{ fontFamily: "var(--brand-headline-font)" }}
               >
                 {b.tagline}
