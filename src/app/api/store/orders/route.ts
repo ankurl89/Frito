@@ -5,6 +5,7 @@ import { awardXP, checkRevenueMilestones } from "@/lib/founder-engine";
 import { recordCreation, transition } from "@/lib/orders/state-machine";
 import { enqueue, kickWorker } from "@/lib/queue/job-queue";
 import { guardIp } from "@/lib/guardrails/guard";
+import { razorpayConfigured, verifyRazorpaySignature } from "@/lib/razorpay";
 
 /**
  * POST /api/store/orders — customer checkout.
@@ -27,11 +28,33 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { brand_slug, customer_name, customer_email, customer_phone, shipping_address, items } = body;
-  const idempotencyKey = req.headers.get("idempotency-key");
+  const {
+    brand_slug, customer_name, customer_email, customer_phone, shipping_address, items,
+    razorpay_order_id, razorpay_payment_id, razorpay_signature,
+  } = body;
+  // Natural idempotency: one payment → one set of orders.
+  const idempotencyKey = req.headers.get("idempotency-key") || razorpay_payment_id || null;
 
   if (!brand_slug || !customer_name || !shipping_address || !items?.length) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  // ── Payment gate ──
+  // When Razorpay is configured, an order can only be created against a payment
+  // whose signature verifies. Without keys (e.g. before they're set in an env),
+  // fall back to the simulated flow so nothing breaks.
+  if (razorpayConfigured()) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return NextResponse.json({ error: "Payment required" }, { status: 402 });
+    }
+    const verified = verifyRazorpaySignature({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+    });
+    if (!verified) {
+      return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
+    }
   }
 
   // Use service client — checkout is unauthenticated but trusted to write orders.

@@ -24,6 +24,26 @@ const STEPS: { key: Step; label: string }[] = [
   { key: "payment", label: "Payment" },
 ];
 
+type RazorpayResponse = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: string, cb: (resp: { error?: { description?: string } }) => void) => void;
+}
+type RazorpayCtor = new (options: Record<string, unknown>) => RazorpayInstance;
+
+/** Inject Razorpay's checkout script once, on demand. */
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise(resolve => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as Window & { Razorpay?: RazorpayCtor }).Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
 export default function CheckoutPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -46,40 +66,110 @@ export default function CheckoutPage() {
     setForm(f => ({ ...f, [k]: v }));
   }
 
+  function orderPayload() {
+    return {
+      brand_slug: slug,
+      customer_name: form.name,
+      customer_email: form.email,
+      customer_phone: form.phone,
+      shipping_address: {
+        line1: form.line1, line2: form.line2,
+        city: form.city, state: form.state,
+        pincode: form.pincode, country: "India",
+      },
+      items: items.map(i => ({
+        product_id: i.product_id,
+        size: i.size,
+        color: i.color,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+    };
+  }
+
+  // Legacy simulated path (no keys configured): create the order directly.
+  async function finalizeSimulated() {
+    const res = await fetch("/api/store/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload()),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Checkout failed");
+    useCart.getState().clear();
+    router.push(`/store/${slug}/order/${data.id}`);
+  }
+
+  // Real path: confirm the verified payment, then redirect to tracking. The
+  // order was pre-created at payment-start, so the webhook is a safety net if
+  // this never runs (dropped browser).
+  async function confirmPayment(resp: RazorpayResponse) {
+    const res = await fetch("/api/store/payments/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "idempotency-key": resp.razorpay_payment_id },
+      body: JSON.stringify(resp),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Payment confirmation failed");
+    useCart.getState().clear();
+    router.push(`/store/${slug}/order/${data.id}`);
+  }
+
   async function placeOrder() {
     setStep("processing");
     setError(null);
     try {
-      const res = await fetch("/api/store/orders", {
+      // 1. Start the payment (server re-prices + pre-creates the order) — or
+      //    detect simulated mode when no keys are configured.
+      const payRes = await fetch("/api/store/payments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brand_slug: slug,
-          customer_name: form.name,
-          customer_email: form.email,
-          customer_phone: form.phone,
-          shipping_address: {
-            line1: form.line1, line2: form.line2,
-            city: form.city, state: form.state,
-            pincode: form.pincode, country: "India",
-          },
-          items: items.map(i => ({
-            product_id: i.product_id,
-            size: i.size,
-            color: i.color,
-            quantity: i.quantity,
-            price: i.price,
-          })),
-        }),
+        body: JSON.stringify(orderPayload()),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      const pay = await payRes.json();
+      if (!payRes.ok) throw new Error(pay.error || "Could not start payment");
 
-      useCart.getState().clear();
-      router.push(`/store/${slug}/order/${data.id}`);
+      if (pay.simulated) {
+        await finalizeSimulated();
+        return;
+      }
+
+      // 2. Open Razorpay Checkout.
+      const loaded = await loadRazorpayScript();
+      const Razorpay = typeof window !== "undefined"
+        ? (window as Window & { Razorpay?: RazorpayCtor }).Razorpay
+        : undefined;
+      if (!loaded || !Razorpay) {
+        throw new Error("Couldn't load the payment window. Check your connection and try again.");
+      }
+
+      const rzp = new Razorpay({
+        key: pay.keyId,
+        order_id: pay.razorpayOrderId,
+        amount: pay.amount,
+        currency: pay.currency,
+        name: pay.brandName || "Secure Checkout",
+        description: "Order payment",
+        prefill: { name: form.name, email: form.email, contact: form.phone },
+        theme: { color: "#7c3aed" },
+        handler: (resp: RazorpayResponse) => {
+          setStep("processing");
+          confirmPayment(resp).catch(err => {
+            setError(err instanceof Error ? err.message : "Payment confirmation failed");
+            setStep("payment");
+          });
+        },
+        modal: {
+          ondismiss: () => { setStep("payment"); setError("Payment was cancelled — you can try again."); },
+        },
+      });
+      rzp.on("payment.failed", (resp) => {
+        setStep("payment");
+        setError(resp?.error?.description || "Payment failed. Please try again.");
+      });
+      rzp.open();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Checkout failed";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "Checkout failed");
       setStep("payment");
     }
   }
@@ -208,8 +298,8 @@ export default function CheckoutPage() {
                     <Check size={16} style={{ color: "var(--brand-primary)" }} />
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 leading-relaxed">
-                    <span className="font-bold">Demo mode:</span> payment will be simulated and your order created instantly. In production this launches the Razorpay payment widget.
+                  <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs text-zinc-600 leading-relaxed flex items-center gap-2">
+                    <Lock size={12} className="flex-shrink-0" /> You&apos;ll complete payment securely in the Razorpay window — cards, UPI, net banking &amp; wallets.
                   </div>
 
                   {error && (
