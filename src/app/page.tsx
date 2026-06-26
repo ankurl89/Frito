@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Type, Palette, Shirt, Rocket } from "lucide-react";
 
 // Realistic Flux-generated product + lifestyle imagery (Supabase public bucket).
 const HOME_IMG = "https://pecaekbgmbuhssrwtclx.supabase.co/storage/v1/object/public/product-assets/_home";
@@ -248,36 +249,53 @@ function Problem() {
 /* ── HOW IT WORKS ── */
 function HowItWorks() {
   const steps = [
-    { num: "01", title: "Describe your idea", desc: "Tell Frito what kind of brand you want to build. One sentence is enough.", tag: "PROMPT" },
-    { num: "02", title: "Brand kit generated", desc: "Name, logo, colors, voice, positioning — generated and editable in seconds.", tag: "AI BRAND" },
-    { num: "03", title: "Products designed", desc: "AI designs your products using your brand identity. Pick from 100+ items.", tag: "AI DESIGN" },
-    { num: "04", title: "Store goes live", desc: "Your storefront is live. Orders route to production automatically.", tag: "LIVE" },
+    { tag: "PROMPT",    title: "Describe your idea",  desc: "Tell Frito what kind of brand you want to build. One sentence is enough.",              icon: Type,    accent: "from-violet-500 to-indigo-600", tagCls: "bg-violet-100 text-violet-700" },
+    { tag: "AI BRAND",  title: "Brand kit generated", desc: "Name, logo, colours, voice, and positioning — generated and editable in seconds.",      icon: Palette, accent: "from-sky-500 to-blue-600",      tagCls: "bg-sky-100 text-sky-700" },
+    { tag: "AI DESIGN", title: "Products designed",   desc: "AI puts your designs on premium apparel — tees, hoodies, and more — ready to sell.",     icon: Shirt,   accent: "from-amber-400 to-orange-600",  tagCls: "bg-amber-100 text-amber-700" },
+    { tag: "LIVE",      title: "Store goes live",     desc: "Your storefront goes live and every order routes to production automatically.",          icon: Rocket,  accent: "from-emerald-500 to-green-600", tagCls: "bg-emerald-100 text-emerald-700" },
   ];
 
   return (
     <section id="how-it-works" className="py-24 px-6 bg-white">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14">
           <p className="font-mono text-xs tracking-widest text-violet-600 mb-4">HOW IT WORKS</p>
-          <h2 className="text-5xl md:text-6xl font-black leading-tight text-zinc-900">
+          <h2 className="text-5xl md:text-6xl font-black leading-[1.05] text-zinc-900">
             From Idea to Revenue<br />in 30 Minutes
           </h2>
+          <p className="text-zinc-500 mt-5 text-lg max-w-xl mx-auto">
+            Four steps. No designers, no developers, no inventory — your AI team does the work.
+          </p>
         </div>
-        <div className="space-y-0">
-          {steps.map((step, i) => (
-            <div key={i} className="flex flex-col sm:flex-row sm:gap-8 sm:items-start py-8 border-b border-zinc-100 last:border-0">
-              <div className="flex items-center gap-3 mb-3 sm:mb-0 sm:gap-8">
-                <span className="font-mono text-xs text-zinc-400 sm:flex-shrink-0 sm:w-16">{step.num}</span>
-                <div className="sm:flex-shrink-0 sm:w-24">
-                  <span className="text-[10px] font-black tracking-wider bg-violet-100 text-violet-700 px-2 py-1 rounded">{step.tag}</span>
+
+        <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* flow line connecting the step nodes (desktop) */}
+          <div className="hidden lg:block absolute top-[60px] left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-violet-300 via-amber-300 to-emerald-300" />
+
+          {steps.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <div key={i} className="relative bg-white border border-zinc-200 rounded-3xl p-6 text-center hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300">
+                <div className="flex justify-center mb-4">
+                  <div className="relative">
+                    <div className={`w-[72px] h-[72px] rounded-2xl bg-gradient-to-br ${step.accent} flex items-center justify-center text-white shadow-lg ring-4 ring-white`}>
+                      <Icon size={30} strokeWidth={2} />
+                    </div>
+                    <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-zinc-900 text-white text-xs font-black flex items-center justify-center ring-2 ring-white">{i + 1}</span>
+                  </div>
                 </div>
+                <span className={`inline-block text-[10px] font-black tracking-wider ${step.tagCls} px-2.5 py-1 rounded-full mb-3`}>{step.tag}</span>
+                <h3 className="text-xl font-black text-zinc-900 mb-1.5">{step.title}</h3>
+                <p className="text-zinc-500 leading-relaxed text-[15px]">{step.desc}</p>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-zinc-900 mb-1">{step.title}</h3>
-                <p className="text-zinc-500">{step.desc}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+
+        <div className="text-center mt-12">
+          <Link href="/signup" className="inline-flex items-center justify-center gap-2 bg-violet-600 text-white font-semibold px-8 py-4 rounded-full hover:bg-violet-700 transition-colors text-base">
+            Start your brand free →
+          </Link>
         </div>
       </div>
     </section>
