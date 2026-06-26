@@ -40,6 +40,7 @@ function Nav() {
           <a href="#how-it-works" className="hover:text-zinc-900 transition-colors">How it works</a>
           <a href="#brand-wall" className="hover:text-zinc-900 transition-colors">Brand wall</a>
           <a href="#pricing" className="hover:text-zinc-900 transition-colors">Pricing</a>
+          <Link href="/guides" className="hover:text-zinc-900 transition-colors">Guides</Link>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Sign in</Link>
@@ -63,20 +64,29 @@ function Hero() {
       </div>
 
       {/* Headline */}
-      <h1 className="text-[clamp(3rem,9vw,7rem)] font-black leading-[0.9] tracking-tight uppercase text-zinc-900 mb-6 max-w-5xl mx-auto">
-        Launch something<br />
-        people{" "}
-        <em className="not-italic italic font-black">actually</em>{" "}
+      <h1 className="text-[clamp(2.5rem,8vw,6.5rem)] font-black leading-[0.95] sm:leading-[0.9] tracking-tight uppercase text-zinc-900 mb-6 max-w-5xl mx-auto break-words">
+        Start your own<br />
+        apparel brand in{" "}
         <span className="relative inline-block">
-          want
+          minutes
           <span className="absolute bottom-1 left-0 w-full h-3 bg-yellow-300 -z-10 skew-x-[-2deg]" />
         </span>.
       </h1>
 
-      <p className="text-lg text-zinc-500 max-w-xl mx-auto mb-10">
-        Launch a premium apparel brand in minutes.<br />
-        Type one prompt — get a brand, your first drop, and a live store.
+      <p className="text-lg sm:text-xl text-zinc-600 max-w-2xl mx-auto mb-7">
+        Describe your idea — Frito&apos;s AI designs your brand, your products, and a live
+        online store. We handle printing, shipping, and payments. No inventory, no upfront
+        cost: <span className="font-semibold text-zinc-900">you only pay when you sell.</span>
       </p>
+
+      {/* At-a-glance benefits */}
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-semibold text-zinc-700 mb-9">
+        {["AI builds your brand, designs & store", "Zero inventory — printed on demand", "Pay only when you sell"].map(b => (
+          <span key={b} className="inline-flex items-center gap-2">
+            <span className="text-violet-600 font-black">✓</span> {b}
+          </span>
+        ))}
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
         <Link href="/signup" className="inline-flex items-center justify-center gap-2 bg-violet-600 text-white font-semibold px-8 py-4 rounded-full hover:bg-violet-700 transition-colors text-base">
@@ -499,8 +509,8 @@ function Pricing() {
     {
       name: "Scale", price: "₹9,999", period: "/mo",
       desc: "For agencies and power sellers.",
-      features: ["Unlimited brands", "API + Zapier access", "Dedicated print partners", "Team seats", "Custom integrations", "Dedicated success manager"],
-      cta: "Talk to sales", highlight: false,
+      features: ["Unlimited brands", "API + Zapier access", "Dedicated print partners", "Team seats", "Advanced analytics", "Priority support"],
+      cta: "Get started", highlight: false,
     },
   ];
 
@@ -544,12 +554,15 @@ function Pricing() {
 function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
   const faqs = [
+    { q: "How long does it take to launch?", a: "Minutes. Describe your idea and Frito's AI builds your brand, product designs, and a live store on the spot. Refine anything before or after you go live." },
     { q: "Do I need inventory?", a: "No. Every product is printed on-demand when a customer orders. You never hold stock or pay upfront." },
     { q: "Do I need Shopify experience?", a: "No. Frito gives you a hosted storefront out of the box. Shopify export is available as an upgrade." },
     { q: "Can I use my own designs?", a: "Yes. You can upload your own artwork or let AI generate designs from your brand brief." },
     { q: "How does fulfillment work?", a: "Orders automatically route to our production network. They print, pack, and ship directly to your customer — you never touch inventory." },
     { q: "When do I get paid?", a: "Profits are settled weekly to your bank account after deducting production and platform fees." },
+    { q: "Can I cancel my plan? Are subscriptions refundable?", a: "Yes — cancel anytime from your dashboard and keep access until the end of your billing period. Subscription fees are non-refundable except where required by law. Customer order refunds follow your store's refund policy." },
     { q: "Can I sell internationally?", a: "International shipping is on our roadmap. Currently we support all of India with Delhivery, Bluedart, and Xpressbees." },
+    { q: "What if I get stuck?", a: "Frito is fully self-serve, but you're never on your own. Every account includes the Founder Playbook — step-by-step guides on selling, social content, and ads — right inside your dashboard, plus email support." },
   ];
 
   return (
@@ -591,8 +604,8 @@ function FinalCTA() {
             <Link href="/signup" className="inline-flex items-center justify-center bg-white text-zinc-900 font-bold px-8 py-4 rounded-full hover:bg-zinc-100 transition-colors">
               Start Building Free →
             </Link>
-            <a href="mailto:hello@frito.ai" className="inline-flex items-center justify-center border-2 border-zinc-600 text-white font-semibold px-8 py-4 rounded-full hover:border-zinc-400 transition-colors">
-              Book a demo
+            <a href="#how-it-works" className="inline-flex items-center justify-center border-2 border-zinc-600 text-white font-semibold px-8 py-4 rounded-full hover:border-zinc-400 transition-colors">
+              See how it works →
             </a>
           </div>
         </div>
@@ -605,11 +618,13 @@ function FinalCTA() {
 function Footer() {
   return (
     <footer className="py-8 px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-zinc-400 max-w-5xl mx-auto">
-      <p>© 2026 Frito AI · Launch a brand in minutes.</p>
-      <div className="flex gap-6">
-        <a href="#" className="hover:text-zinc-900 transition-colors">Privacy</a>
-        <a href="#" className="hover:text-zinc-900 transition-colors">Terms</a>
-        <a href="mailto:hello@frito.ai" className="hover:text-zinc-900 transition-colors">Contact</a>
+      <p>© {new Date().getFullYear()} Frito AI · Launch a brand in minutes.</p>
+      <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
+        <Link href="/terms" className="hover:text-zinc-900 transition-colors">Terms</Link>
+        <Link href="/privacy" className="hover:text-zinc-900 transition-colors">Privacy</Link>
+        <Link href="/refunds" className="hover:text-zinc-900 transition-colors">Refunds</Link>
+        <Link href="/shipping" className="hover:text-zinc-900 transition-colors">Shipping</Link>
+        <Link href="/contact" className="hover:text-zinc-900 transition-colors">Contact</Link>
       </div>
     </footer>
   );
