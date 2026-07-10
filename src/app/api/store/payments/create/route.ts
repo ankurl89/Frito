@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ simulated: true });
   }
 
-  if (!customer_name || !shipping_address) {
+  // Validate BEFORE creating the Razorpay order — a failed insert afterwards
+  // would orphan an unpaid Razorpay order and surface a raw DB error.
+  if (!customer_name || !shipping_address || !customer_email || !String(customer_email).includes("@")) {
     return NextResponse.json({ error: "Missing customer details" }, { status: 400 });
   }
 
