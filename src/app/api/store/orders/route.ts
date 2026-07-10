@@ -6,6 +6,7 @@ import { recordCreation, transition } from "@/lib/orders/state-machine";
 import { enqueue, kickWorker } from "@/lib/queue/job-queue";
 import { guardIp } from "@/lib/guardrails/guard";
 import { razorpayConfigured, verifyRazorpaySignature } from "@/lib/razorpay";
+import { sendOrderConfirmation, sendFounderSaleAlert } from "@/lib/notifications";
 
 /**
  * POST /api/store/orders — customer checkout.
@@ -124,6 +125,10 @@ export async function POST(req: NextRequest) {
 
   // Drain the queue now (non-blocking). pg_cron catches anything missed.
   kickWorker();
+
+  // Best-effort emails (confirmation to the customer; sale alert once).
+  sendOrderConfirmation(created[0].id).catch(err => console.error("order confirmation email failed:", err));
+  sendFounderSaleAlert(created[0].id).catch(err => console.error("sale alert email failed:", err));
 
   // Founder gamification — reward the brand owner.
   if (brand.user_id) {

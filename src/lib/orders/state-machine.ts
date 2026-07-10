@@ -87,6 +87,15 @@ export async function transition(
     metadata,
   });
 
+  // Customer notification on shipping — fire-and-forget so email issues can
+  // never fail a state transition. (Dynamic import keeps this module lean for
+  // its many callers.)
+  if (to === "shipped") {
+    import("@/lib/notifications")
+      .then(({ sendOrderShipped }) => sendOrderShipped(orderId))
+      .catch(err => console.error("shipped email failed:", err));
+  }
+
   return { ok: true, from, to };
 }
 

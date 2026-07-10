@@ -208,12 +208,26 @@ export async function render(input: RenderInput): Promise<RenderOutput> {
     .png()
     .toBuffer();
 
-  // ── PRODUCTION FILE: artwork at target print resolution, transparent, no template ──
-  const prodBuf = await sharp(await artworkBase.png().toBuffer())
-    .resize(printArea.print_px_width, printArea.print_px_height, {
-      fit: "inside",
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
+  // ── PRODUCTION FILE: what the printer receives. WYSIWYG guarantee: the
+  //    founder's scale + offset are baked in exactly as previewed — the canvas
+  //    is the FULL print area (transparent), and the artwork sits inside it at
+  //    the same relative size/position as on the mockup. Never send a file
+  //    that differs from what the founder approved.
+  const prodW = printArea.print_px_width;
+  const prodH = printArea.print_px_height;
+  const prodArtBuf = await sharp(await artworkBase.png().toBuffer())
+    .resize(Math.max(1, Math.round(prodW * scale)), Math.max(1, Math.round(prodH * scale)), { fit: "inside" })
+    .png()
+    .toBuffer();
+  const paMeta = await sharp(prodArtBuf).metadata();
+  const paW = paMeta.width || 1, paH = paMeta.height || 1;
+  // Map mockup offsets (RENDER-canvas px) → production px via the print-rect ratio.
+  const prodOffX = printW > 0 ? Math.round(offX * (prodW / printW)) : 0;
+  const prodOffY = printH > 0 ? Math.round(offY * (prodH / printH)) : 0;
+  const paLeft = Math.min(Math.max(0, Math.round((prodW - paW) / 2 + prodOffX)), Math.max(0, prodW - paW));
+  const paTop = Math.min(Math.max(0, Math.round((prodH - paH) / 2 + prodOffY)), Math.max(0, prodH - paH));
+  const prodBuf = await sharp({ create: { width: prodW, height: prodH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: prodArtBuf, left: paLeft, top: paTop }])
     .png()
     .toBuffer();
 

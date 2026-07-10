@@ -65,6 +65,20 @@ export async function submitOrder(orderId: string): Promise<void> {
   const placement = (product.placement || {}) as { key?: string };
   const quantity = order.quantity || 1;
   const unitPrice = variant.price ?? product.sell_price ?? 0;
+
+  // Print-quality gate: a LIVE order must carry the print-ready production
+  // file (WYSIWYG-rendered at print DPI). Submitting raw artwork — or nothing —
+  // would print wrong or blank. Throwing here sends the job through
+  // retry → dead-letter, where it's visible in Mission Control instead of
+  // silently producing a bad garment. (Sandbox submissions skip the gate so
+  // test flows keep working.)
+  const printFileUrl: string | undefined = product.production_file_url || undefined;
+  if (!provider.getCapabilities().sandbox && !printFileUrl) {
+    throw new Error(
+      `Product ${product.id} has no production file — open its artwork editor and save to regenerate, then retry this order.`
+    );
+  }
+
   const items: FulfillmentLineItem[] = [{
     catalogProductId: product.qikink_product_id || product.sku,
     productName: product.name,
@@ -73,7 +87,7 @@ export async function submitOrder(orderId: string): Promise<void> {
     placementKey: placement.key,
     quantity,
     price: unitPrice,
-    printFileUrl: product.production_file_url || product.artwork_url,
+    printFileUrl: printFileUrl || product.artwork_url,   // sandbox may fall back
     mockupUrl: product.mockup_url,
   }];
 

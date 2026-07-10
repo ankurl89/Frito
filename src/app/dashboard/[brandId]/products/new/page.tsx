@@ -55,6 +55,10 @@ export default function NewProductPage() {
   const [aiDescription, setAiDescription] = useState("");
   const [generating, setGenerating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  // Variation picking: base-resolution candidates → founder picks → finalize
+  // (4× upscale + background removal) runs on the chosen one only.
+  const [candidates, setCandidates] = useState<{ url: string; final?: boolean }[]>([]);
+  const [finalizing, setFinalizing] = useState<string | null>(null);
 
   // Placement (named placement + fine-tune)
   const [placementKey, setPlacementKey] = useState<PlacementKey>(DEFAULT_PLACEMENT);
@@ -91,13 +95,15 @@ export default function NewProductPage() {
   const stepIdx = STEPS.findIndex(s => s.key === step);
   const filtered = category === "All" ? QIKINK_CATALOG : QIKINK_CATALOG.filter(p => p.category === category);
 
-  /** STEP 2: Generate artwork via AI (just the graphic, no product). */
+  /** STEP 2: Generate artwork candidates via AI (just the graphic, no product). */
   async function generateArtwork() {
     if (!brand || !template) return;
     setGenerating(true);
     setArtworkUrl(null);
+    setCandidates([]);
     setValidationError(null);
     try {
+      const area = getPlacement(template, placementKey).print_area;
       const res = await fetch("/api/ai/design", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,29 +112,63 @@ export default function NewProductPage() {
           productName: template.name,
           productCategory: template.category,
           userDescription: aiDescription,
+          printArea: { width: area.print_px_width, height: area.print_px_height },
         }),
       });
       const data = await res.json();
-      if (!data.url) {
+      if (!res.ok || !data.candidates?.length) {
         setValidationError(data.error || "AI didn't return valid artwork. Try again with a more specific description.");
         return;
       }
 
-      // Artwork validation (Layer 2 of PRD)
-      const validation = await validateArtwork(data.url);
+      setArtworkConcept(data.concept || "");
+      setArtworkPrompt(data.prompt || "");
+
+      // Single final result (SVG provider) → straight to preview.
+      if (data.candidates.length === 1 && data.candidates[0].final) {
+        await chooseCandidate(data.candidates[0].url, true);
+        return;
+      }
+      setCandidates(data.candidates);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  /** STEP 2b: Founder picks a candidate → finalize it for print. */
+  async function chooseCandidate(url: string, final?: boolean) {
+    if (!template) return;
+    setFinalizing(url);
+    setValidationError(null);
+    try {
+      let finalUrl = url;
+      if (!final) {
+        const res = await fetch("/api/ai/design/finalize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, transparent: ["Apparel", "Accessories"].includes(template.category) }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || "Preparing the artwork failed — try another option.");
+        finalUrl = data.url;
+      }
+
+      // Artwork validation (Layer 2 of PRD) — on the print-ready file.
+      const validation = await validateArtwork(finalUrl);
       if (!validation.ok) {
         setValidationError(validation.reason);
         return;
       }
 
-      setArtworkUrl(data.url);
-      setArtworkConcept(data.concept || "");
-      setArtworkPrompt(data.prompt || "");
+      setArtworkUrl(finalUrl);
+      setCandidates([]);
       setStep("preview");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Generation failed");
+      setValidationError(err instanceof Error ? err.message : "Preparing the artwork failed — try another option.");
     } finally {
-      setGenerating(false);
+      setFinalizing(null);
     }
   }
 
@@ -171,6 +211,7 @@ export default function NewProductPage() {
           brandDNA: brand,
           productName: template.name,
           productCategory: template.category,
+          productMaterial: template.material,
           designDescription: artworkConcept || artworkPrompt,
         }),
       });
@@ -402,15 +443,51 @@ export default function NewProductPage() {
               />
               <button
                 onClick={generateArtwork}
-                disabled={generating}
+                disabled={generating || finalizing !== null}
                 className="w-full mt-4 bg-zinc-900 text-white font-bold py-3.5 rounded-xl hover:bg-violet-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {generating
-                  ? <><Loader2 size={14} className="animate-spin" /> Generating artwork…</>
-                  : <><Sparkles size={14} /> Generate with AI</>
+                  ? <><Loader2 size={14} className="animate-spin" /> Generating options…</>
+                  : candidates.length > 0
+                    ? <><Sparkles size={14} /> Generate new options</>
+                    : <><Sparkles size={14} /> Generate with AI</>
                 }
               </button>
             </div>
+
+            {/* Candidate picker: pick a favourite → it gets print-prepped */}
+            {candidates.length > 0 && (
+              <div className="mt-4 bg-white border border-zinc-200 rounded-2xl p-5">
+                <p className="font-mono text-[10px] tracking-widest text-zinc-400 mb-3">
+                  PICK YOUR FAVOURITE — WE&rsquo;LL PREPARE IT FOR PRINT
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {candidates.map(c => (
+                    <button
+                      key={c.url}
+                      onClick={() => chooseCandidate(c.url, c.final)}
+                      disabled={finalizing !== null}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all bg-zinc-50 ${
+                        finalizing === c.url ? "border-violet-500" : "border-zinc-200 hover:border-violet-400 hover:shadow-md"
+                      } disabled:opacity-60`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={c.url} alt="Design option" className="w-full h-full object-contain" />
+                      {finalizing === c.url && (
+                        <span className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                          <Loader2 size={18} className="animate-spin text-violet-600" />
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {finalizing && (
+                  <p className="font-mono text-[10px] text-zinc-400 mt-3 text-center tracking-wider">
+                    PREPARING FOR PRINT — UPSCALING + CUTTING THE BACKGROUND…
+                  </p>
+                )}
+              </div>
+            )}
 
             {validationError && (
               <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 items-start">

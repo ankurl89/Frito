@@ -42,11 +42,13 @@ export function validateArtwork({ artwork, printArea, profile }: ValidateInput):
   }
 
   // ── Transparency (required per profile) ──
+  // ERROR, not a warning: on garments an opaque file prints as a solid
+  // rectangle (e.g. a white box on a black hoodie). Never allow it through.
   if (profile.requireTransparency && !artwork.hasAlpha) {
     issues.push({
-      level: "warn",
+      level: "error",
       code: "no_transparency",
-      message: "Artwork has no transparent background — it will print as a solid rectangle.",
+      message: "Artwork has no transparent background — it would print as a solid rectangle on the garment. Use a transparent PNG.",
     });
   }
 

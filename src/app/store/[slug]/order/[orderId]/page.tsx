@@ -37,14 +37,32 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
   const currentStage = customerStageIndex(order.status);
   const isCancelled = order.status === "cancelled" || order.status === "refunded";
 
+  // Merchant's Meta Pixel Purchase event, deduped by order id (fires on the
+  // confirmation page; eventID stops double-counting on revisits/refreshes).
+  const pixelId = String(
+    (brand.storefront_config as Record<string, unknown> | undefined)?.meta_pixel_id || ""
+  ).replace(/\D/g, "");
+  const purchaseValue = Number(order.total_amount || 0);
+
   return (
     <div style={{ backgroundColor: "var(--brand-bg)", color: "var(--brand-text)" }}>
+      {pixelId && !isCancelled && (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if(window.fbq){fbq('track','Purchase',{value:${purchaseValue},currency:'INR'},{eventID:'${order.id}'});}`,
+          }}
+        />
+      )}
       <div className="max-w-3xl mx-auto px-6 py-12">
         <p className="font-mono text-[11px] tracking-widest opacity-60 mb-3">ORDER #{order.id.slice(0, 8).toUpperCase()}</p>
         <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2" style={{ fontFamily: "var(--brand-headline-font)" }}>
           Thanks for your order
         </h1>
-        <p className="opacity-70 mb-10">We&apos;ve sent a confirmation to <span className="font-bold">{order.customer_email}</span>.</p>
+        <p className="opacity-70 mb-10">
+          {process.env.RESEND_API_KEY
+            ? <>A confirmation email is on its way to <span className="font-bold">{order.customer_email}</span>.</>
+            : <>Order confirmed for <span className="font-bold">{order.customer_email}</span> — bookmark this page to track it.</>}
+        </p>
 
         {/* Status pipeline */}
         <div className="rounded-2xl p-8 border mb-6" style={{ backgroundColor: "var(--brand-surface)", borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>

@@ -54,6 +54,56 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
+  // Load the current row once — the gates below compare against it.
+  const { data: current } = await supabase
+    .from("products")
+    .select("base_cost, status, production_file_url, validation_report, visualization_score")
+    .eq("id", id)
+    .single();
+
+  // Price floor: never allow a sell price below production cost — it would
+  // create negative-profit orders that flow straight into the payout ledger.
+  if ("sell_price" in update && current?.base_cost != null) {
+    const price = Number(update.sell_price);
+    if (!Number.isFinite(price) || price < Number(current.base_cost)) {
+      return NextResponse.json(
+        { error: `Selling price can't be below the production cost (₹${current.base_cost}).` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Artwork changed → the previously rendered mockup/production file/score no
+  // longer describe this product. Invalidate them (the artwork editor re-runs
+  // the render pipeline immediately after, which restores them).
+  if ("artwork_url" in update && !("production_file_url" in update)) {
+    update.production_file_url = null;
+    update.mockup_url = null;
+    update.visualization_score = null;
+    update.validation_report = null;
+  }
+
+  // Publish gate (server-side; the client gate alone is bypassable): a product
+  // may only go live with a print-ready production file and a passing
+  // visualization score. This is what guarantees customers can't buy something
+  // that can't be printed faithfully.
+  if (update.status === "published" && current?.status !== "published") {
+    const report = current?.validation_report as { score?: { publishable?: boolean } } | null;
+    const hasProductionFile = Boolean(current?.production_file_url) && !("production_file_url" in update && !update.production_file_url);
+    if (!hasProductionFile) {
+      return NextResponse.json(
+        { error: "This product has no print-ready file yet. Open the artwork editor and save to regenerate it, then publish." },
+        { status: 409 }
+      );
+    }
+    if (report?.score && report.score.publishable === false) {
+      return NextResponse.json(
+        { error: "This product's visualization score is below the publish threshold. Improve the artwork (resolution/transparency/placement) and try again." },
+        { status: 409 }
+      );
+    }
+  }
+
   // Side-effects on lifecycle transitions.
   if (update.status === "published") update.published_at = new Date().toISOString();
   if (update.status === "archived") update.archived_at = new Date().toISOString();

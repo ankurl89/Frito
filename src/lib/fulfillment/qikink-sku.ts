@@ -22,6 +22,7 @@
 
 import { ColorName, PlacementKey } from "@/lib/v1-commerce";
 import { SupportedProductId } from "@/lib/v1-commerce";
+import { getTemplate, getPlacement } from "@/lib/qikink-catalog";
 
 /**
  * Qikink garment code per OUR product id. Filled from the dashboard SKU sheet
@@ -119,6 +120,28 @@ export function resolveQikinkPlacement(key: PlacementKey | string | undefined): 
 
 export function resolveQikinkPrintTypeId(productId: string): number {
   return PRINT_TYPE_ID[productId] ?? DEFAULT_PRINT_TYPE_ID;
+}
+
+/**
+ * Physical print dimensions (inches) for a placement's print area.
+ * Our production files are rendered at the placement's full print-area pixel
+ * size at 300 DPI, so inches = px / 300. Sending these with the order pins the
+ * print size to exactly what the founder previewed (WYSIWYG), instead of
+ * leaving it to the printer's default.
+ */
+export function resolvePrintDimensionsInches(
+  productId: string,
+  placementKey: PlacementKey | string | undefined
+): { width_inches: string; height_inches: string } {
+  const template = getTemplate(productId);
+  if (!template) return { width_inches: "", height_inches: "" };
+  const placement = getPlacement(template, placementKey as PlacementKey | undefined);
+  if (!placement) return { width_inches: "", height_inches: "" };
+  const area = placement.print_area;
+  return {
+    width_inches: (area.print_px_width / 300).toFixed(1),
+    height_inches: (area.print_px_height / 300).toFixed(1),
+  };
 }
 
 export type { SupportedProductId };

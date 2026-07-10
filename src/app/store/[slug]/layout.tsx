@@ -75,6 +75,12 @@ export default async function StorefrontLayout({
   const bodyFamily = knownFont(b.typography?.body) || knownFont(b.brand_book?.typography_detail?.body_font);
   const fontsHref = googleFontsHref([headlineFamily, bodyFamily]);
 
+  // Merchant's Meta Pixel (Store Settings). Digits-only by construction, so
+  // it's safe to inline.
+  const metaPixelId = String(
+    (b.storefront_config as Record<string, unknown> | undefined)?.meta_pixel_id || ""
+  ).replace(/\D/g, "");
+
   // Compute readable foreground colors for each surface — so light brand
   // colors (e.g. cream/pastel) get dark text instead of invisible white.
   const themeStyle = {
@@ -95,6 +101,13 @@ export default async function StorefrontLayout({
   return (
     <div style={themeStyle} className="storefront-root min-h-screen flex flex-col" data-brand={b.slug}>
       {fontsHref && <link rel="stylesheet" href={fontsHref} />}
+      {metaPixelId && (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${metaPixelId}');fbq('track','PageView');`,
+          }}
+        />
+      )}
       <StorefrontHeader brand={b} />
       <main className="flex-1">{children}</main>
       <StorefrontFooter brand={b} />

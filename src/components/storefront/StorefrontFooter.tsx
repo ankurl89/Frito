@@ -13,7 +13,9 @@ export default function StorefrontFooter({ brand }: { brand: BrandDNA }) {
         </div>
         {[
           { label: "Shop", links: [["All Products", `/store/${brand.slug}/collection/all`]] },
-          { label: "Help", links: [["Track Order", `/store/${brand.slug}/track`], ["Contact", "#"], ["Returns", "#"]] },
+          // Contact/Returns/Shipping point at the platform policies — Frito is
+          // the merchant of record, so its policies govern every store.
+          { label: "Help", links: [["Track Order", `/store/${brand.slug}/track`], ["Returns & Refunds", "/refunds"], ["Shipping", "/shipping"], ["Contact", "/contact"]] },
         ].map(group => (
           <div key={group.label}>
             <p className="font-mono text-[10px] tracking-widest opacity-60 mb-3" style={{ color: "var(--brand-text)" }}>{group.label.toUpperCase()}</p>

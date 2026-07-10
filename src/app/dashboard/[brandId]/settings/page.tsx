@@ -41,6 +41,7 @@ export default function StoreSettingsPage() {
   const [palette, setPalette] = useState<ColorPalette>({} as ColorPalette);
   const [headlineFont, setHeadlineFont] = useState("Inter");
   const [bodyFont, setBodyFont] = useState("Inter");
+  const [metaPixelId, setMetaPixelId] = useState("");
 
   // Domain state
   const [connectedDomain, setConnectedDomain] = useState<string | null>(null);
@@ -61,6 +62,7 @@ export default function StoreSettingsPage() {
     setBodyFont(knownFont(b.typography?.body) || knownFont(b.brand_book?.typography_detail?.body_font) || "Inter");
     setConnectedDomain(b.custom_domain || null);
     setDomainStatus(b.domain_status || null);
+    setMetaPixelId(String((b.storefront_config as Record<string, unknown> | undefined)?.meta_pixel_id || ""));
   }, [brandId]);
 
   async function connectDomain() {
@@ -126,6 +128,10 @@ export default function StoreSettingsPage() {
           name, tagline, story,
           palette,
           typography: { ...(brand.typography || {}), heading: headlineFont, body: bodyFont },
+          storefront_config: {
+            ...((brand.storefront_config as Record<string, unknown>) || {}),
+            meta_pixel_id: metaPixelId.replace(/\D/g, "") || null,
+          },
         }),
       });
       const data = await res.json();
@@ -285,6 +291,21 @@ export default function StoreSettingsPage() {
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* Meta Pixel — makes the "run ads" playbook actionable */}
+            <div>
+              <span className="block font-mono text-[10px] tracking-widest text-zinc-400 mb-1.5 uppercase">Meta Pixel ID (optional)</span>
+              <input
+                value={metaPixelId}
+                onChange={e => setMetaPixelId(e.target.value)}
+                placeholder="e.g. 123456789012345"
+                inputMode="numeric"
+                className={inputCls}
+              />
+              <p className="text-[11px] text-zinc-400 mt-1.5">
+                Paste your Pixel ID from Meta Events Manager to track visits and purchases on your store — needed before running Instagram/Facebook ads.
+              </p>
             </div>
           </Card>
         </div>

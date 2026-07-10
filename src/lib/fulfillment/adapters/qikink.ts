@@ -16,6 +16,7 @@ import { OrderState } from "@/lib/orders/states";
 import { QIKINK_BASE, isQikinkSandbox, qikinkAuthHeaders, clearQikinkTokenCache } from "./qikink-auth";
 import {
   resolveQikinkSku, resolveQikinkPlacement, resolveQikinkPrintTypeId, isQikinkCatalogMapped,
+  resolvePrintDimensionsInches,
 } from "../qikink-sku";
 
 // Qikink status string → canonical order state. Covers both production statuses
@@ -94,8 +95,8 @@ export class QikinkAdapter implements FulfillmentProvider {
           ? [{
               design_code: `frito-${resolveQikinkPlacement(i.placementKey)}`,
               placement_sku: resolveQikinkPlacement(i.placementKey),
-              width_inches: "",
-              height_inches: "",
+              // Pin the physical print size to the previewed print area (WYSIWYG).
+              ...resolvePrintDimensionsInches(i.catalogProductId, i.placementKey),
               design_link: i.printFileUrl,
               mockup_link: i.mockupUrl || "",
             }]

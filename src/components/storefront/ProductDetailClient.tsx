@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { BrandDNA, Product } from "@/lib/types";
 import { useCart } from "@/lib/cart-store";
 import { colorHex } from "@/lib/v1-commerce";
+import { getSizeGuide } from "@/lib/size-guide";
 import StorefrontProductCard from "./StorefrontProductCard";
-import { Truck, RotateCcw, Shield, Plus, Minus } from "lucide-react";
+import { Truck, RotateCcw, Shield, Plus, Minus, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ProductDetailClient({
@@ -20,7 +21,9 @@ export default function ProductDetailClient({
   const [selectedColor, setSelectedColor] = useState<string | undefined>(colors[0]);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const add = useCart(s => s.add);
+  const sizeGuide = getSizeGuide(product.qikink_product_id);
 
   // Hero image for the selected color (falls back to default gallery/mockup).
   const colorHero = selectedColor ? colorImages[selectedColor.toLowerCase()] : undefined;
@@ -142,7 +145,7 @@ export default function ProductDetailClient({
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-mono text-[10px] tracking-widest opacity-60">SIZE</p>
-                  <button className="text-xs underline opacity-60 hover:opacity-100">Size guide</button>
+                  <button onClick={() => setSizeGuideOpen(true)} className="text-xs underline opacity-60 hover:opacity-100">Size guide</button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {sizes.map(size => (
@@ -211,6 +214,41 @@ export default function ProductDetailClient({
             )}
           </div>
         </div>
+
+        {/* Size guide modal */}
+        {sizeGuideOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Size guide">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setSizeGuideOpen(false)} />
+            <div className="relative w-full max-w-sm rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: "var(--brand-bg)", color: "var(--brand-text)" }}>
+              <div className="flex items-center justify-between mb-1">
+                <p className="font-black text-lg" style={{ fontFamily: "var(--brand-headline-font)" }}>Size guide</p>
+                <button onClick={() => setSizeGuideOpen(false)} aria-label="Close size guide" className="w-8 h-8 rounded-full flex items-center justify-center hover:opacity-70">
+                  <X size={16} />
+                </button>
+              </div>
+              <p className="text-xs opacity-70 mb-4">{sizeGuide.fitNote}</p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="font-mono text-[10px] tracking-widest opacity-60 text-left">
+                    <th className="pb-2 font-normal">SIZE</th>
+                    <th className="pb-2 font-normal text-right">CHEST (IN)</th>
+                    <th className="pb-2 font-normal text-right">LENGTH (IN)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizeGuide.rows.map(r => (
+                    <tr key={r.size} className="border-t" style={{ borderColor: "color-mix(in srgb, var(--brand-text) 10%, transparent)" }}>
+                      <td className="py-2 font-bold">{r.size}</td>
+                      <td className="py-2 text-right">{r.chest}&Prime;</td>
+                      <td className="py-2 text-right">{r.length}&Prime;</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-[10px] opacity-50 mt-4">Garment measured flat · approximate, ±0.5&Prime;</p>
+            </div>
+          </div>
+        )}
 
         {/* Related */}
         {related.length > 0 && (

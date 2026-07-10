@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const sku = body.sku || `${body.brand_id?.slice(0, 4).toUpperCase()}-${nanoid(6).toUpperCase()}`;
 
+  // Price floor: selling below production cost creates negative-profit orders.
+  if (body.base_cost != null && body.sell_price != null && Number(body.sell_price) < Number(body.base_cost)) {
+    return NextResponse.json(
+      { error: `Selling price can't be below the production cost (₹${body.base_cost}).` },
+      { status: 400 }
+    );
+  }
+
   // Normalize legacy "active" → "published"
   const status = body.status === "active" ? "published" : (body.status || "draft");
   const published_at = status === "published" ? new Date().toISOString() : null;

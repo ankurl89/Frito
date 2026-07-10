@@ -20,6 +20,27 @@ Running list of follow-ups that aren't blocking but shouldn't be lost.
 - [ ] **Payouts — Phase 3: automate transfers via a payout rail (e.g. RazorpayX)** once manual
   runs have validated the ledger. Requires migration `db/migrations/002_payouts.sql` to be applied.
 
+- [ ] **Emails — set `RESEND_API_KEY` + `EMAIL_FROM` in Vercel** to activate the transactional
+  emails (order confirmation, shipped w/ tracking, founder sale alert — built in `lib/email.ts` +
+  `lib/notifications.ts`, no-op until the key exists). Needs a Resend account + verified domain.
+
+- [ ] **COD (Cash on Delivery)** — deliberately deferred: needs its own order state
+  (confirmed-unpaid), a Razorpay-bypass path in the payment gate, Qikink `gateway: "COD"` with
+  collectable amount, and COD-risk rules (fake-order abuse). Big conversion lever for India —
+  build as its own project.
+
+- [ ] **Discount/coupon codes** — deferred: table + validation at payment-create + checkout field
+  + founder UI. Four Playbook guides reference codes.
+
+- [ ] **Product reviews** on storefronts — deferred (social proof).
+
+- [ ] **Artwork quality: consider `FLUX_MODEL=fal-ai/flux/dev`** (higher quality than schnell,
+  ~2× cost/latency) — one env var; test side-by-side before switching.
+
+- [ ] **First live print check** — when the first real Qikink order goes out, verify the file
+  Qikink received is the full-resolution production file (the bg-removal step's output resolution
+  is unconfirmed) and that the printed size matches the mockup (width/height_inches now sent).
+
 - [ ] **Set up dedicated admin email accounts for Mission Control (separation of identity).**
   - Why: today `l.ankur89@gmail.com` is **both** a founder/storefront account **and** the
     super-admin. The staff login is separate, but the identity is shared. Using dedicated

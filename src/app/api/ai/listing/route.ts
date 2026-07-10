@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const guard = await guardAi(user.id, "ai");
   if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: 429 });
 
-  const { brandDNA, productName, productCategory, designDescription } = await req.json();
+  const { brandDNA, productName, productCategory, productMaterial, designDescription } = await req.json();
   const book = brandDNA.brand_book || {};
 
   // Build the brand-memory section only if a brand book exists.
@@ -50,12 +50,13 @@ BRAND
 ${memoryBlock}
 PRODUCT
 - ${productName} (${productCategory})
+- Fabric: ${productMaterial || "premium cotton"}
 - Design: ${designDescription || "brand-aligned graphic design"}
 
 Output exactly this JSON shape:
 {
   "listing_title": "Compelling title (max 80 chars). Match the brand voice. Do not just describe — sell the feeling.",
-  "listing_description": "3-4 paragraph description in the brand's voice. Reference the audience's aspirations, not just product specs. Include features and CTA.",
+  "listing_description": "3-4 paragraph description in the brand's voice. Reference the audience's aspirations, not just product specs. One paragraph MUST cover the concrete details buyers need to feel safe: the exact fabric/GSM given above, fit, and print quality. End with a CTA.",
   "seo_tags": ["8-10 SEO tags relevant to product + audience"]
 }`,
     }],

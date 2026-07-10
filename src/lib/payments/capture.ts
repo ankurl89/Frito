@@ -15,6 +15,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { transition } from "@/lib/orders/state-machine";
 import { enqueue, kickWorker } from "@/lib/queue/job-queue";
 import { awardXP, checkRevenueMilestones } from "@/lib/founder-engine";
+import { sendOrderConfirmation, sendFounderSaleAlert } from "@/lib/notifications";
 
 export interface CaptureResult {
   ok: boolean;          // did we find orders for this payment?
@@ -59,6 +60,9 @@ export async function captureRazorpayPayment(
         payload: { orderId: order.id },
         idempotencyKey: `submit:${order.id}`,
       });
+      // Best-effort emails — never allowed to fail the capture.
+      sendOrderConfirmation(order.id).catch(err => console.error("order confirmation email failed:", err));
+      sendFounderSaleAlert(order.id).catch(err => console.error("sale alert email failed:", err));
     }
   }
 

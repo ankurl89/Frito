@@ -29,6 +29,8 @@ export default function ReplaceArtworkPage() {
   const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
   const [aiDescription, setAiDescription] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [candidates, setCandidates] = useState<{ url: string; final?: boolean }[]>([]);
+  const [finalizing, setFinalizing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [placementKey, setPlacementKey] = useState<PlacementKey>(DEFAULT_PLACEMENT);
   const [scale, setScale] = useState(1);
@@ -64,22 +66,53 @@ export default function ReplaceArtworkPage() {
   async function generateArtwork() {
     if (!brand || !product || !template) return;
     setGenerating(true);
+    setCandidates([]);
     setError(null);
     try {
+      const area = getPlacement(template, placementKey).print_area;
       const res = await fetch("/api/ai/design", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           brandDNA: brand, productName: template.name,
           productCategory: template.category, userDescription: aiDescription,
+          printArea: { width: area.print_px_width, height: area.print_px_height },
         }),
       });
       const data = await res.json();
-      if (!data.url) throw new Error(data.error || "Generation failed");
-      setArtworkUrl(data.url);
+      if (!res.ok || !data.candidates?.length) throw new Error(data.error || "Generation failed");
+      if (data.candidates.length === 1 && data.candidates[0].final) {
+        setArtworkUrl(data.candidates[0].url);
+        return;
+      }
+      setCandidates(data.candidates);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  /** Founder picks a candidate → finalize it (upscale + background removal). */
+  async function chooseCandidate(url: string, final?: boolean) {
+    if (!template) return;
+    setFinalizing(url);
+    try {
+      let finalUrl = url;
+      if (!final) {
+        const res = await fetch("/api/ai/design/finalize", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, transparent: ["Apparel", "Accessories"].includes(template.category) }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || "Preparing the artwork failed — try another option.");
+        finalUrl = data.url;
+      }
+      setArtworkUrl(finalUrl);
+      setCandidates([]);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Preparing the artwork failed");
+    } finally {
+      setFinalizing(null);
     }
   }
 
@@ -231,9 +264,36 @@ export default function ReplaceArtworkPage() {
                 rows={2}
                 className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
               />
-              <button onClick={generateArtwork} disabled={generating} className="w-full mt-2 bg-zinc-900 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-violet-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
-                {generating ? <><Loader2 size={11} className="animate-spin" /> Generating</> : <><Sparkles size={11} /> Generate with AI</>}
+              <button onClick={generateArtwork} disabled={generating || finalizing !== null} className="w-full mt-2 bg-zinc-900 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-violet-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
+                {generating ? <><Loader2 size={11} className="animate-spin" /> Generating options</> : <><Sparkles size={11} /> Generate with AI</>}
               </button>
+
+              {/* Candidate picker */}
+              {candidates.length > 0 && (
+                <div className="mt-3">
+                  <p className="font-mono text-[9px] tracking-widest text-zinc-400 mb-2">PICK ONE — WE&rsquo;LL PREP IT FOR PRINT</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {candidates.map(c => (
+                      <button
+                        key={c.url}
+                        onClick={() => chooseCandidate(c.url, c.final)}
+                        disabled={finalizing !== null}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 bg-zinc-50 transition-all ${
+                          finalizing === c.url ? "border-violet-500" : "border-zinc-200 hover:border-violet-400"
+                        } disabled:opacity-60`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={c.url} alt="Design option" className="w-full h-full object-contain" />
+                        {finalizing === c.url && (
+                          <span className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                            <Loader2 size={14} className="animate-spin text-violet-600" />
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Placement */}
