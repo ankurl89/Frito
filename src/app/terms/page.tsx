@@ -53,14 +53,21 @@ export default function TermsPage() {
       <Section title="5. Orders, pricing & payments">
         <P>
           Prices for products are shown in Indian Rupees (INR) and are inclusive of applicable taxes
-          unless stated otherwise. Customer payments are processed by our payment partner; Frito does
-          not store full card details. You authorise Frito and its partners to collect payment,
-          deduct applicable production, platform, and payment-processing fees, and settle the
-          remaining proceeds to you per your plan.
+          unless stated otherwise. Sales on Frito-hosted storefronts are processed through Frito&rsquo;s
+          payment infrastructure via our payment partner; Frito does not store full card details.
         </P>
       </Section>
 
-      <Section title="6. Fulfilment & shipping">
+      <Section title="6. Your earnings & payouts">
+        <UL>
+          <li>For each completed sale, you earn the difference between your selling price and the applicable production, platform, and payment-processing fees (your &ldquo;Earnings&rdquo;).</li>
+          <li>Earnings accrue to your Frito earnings balance and are paid out to your registered bank account on a periodic payout cycle, after a reasonable buffer for cancellations, returns, and chargebacks.</li>
+          <li>Payouts require valid bank account details and tax information (such as PAN). Amounts may be adjusted for refunds and chargebacks, and taxes may be deducted at source where required by law.</li>
+          <li>Frito may withhold or delay payouts where fraud, abuse, or a breach of these Terms is suspected, or where required by law.</li>
+        </UL>
+      </Section>
+
+      <Section title="7. Fulfilment & shipping">
         <P>
           Orders are produced on demand and shipped by our logistics partners. Delivery timelines are
           estimates. See our <a className="text-violet-600 hover:underline" href="/shipping">Shipping &amp; Delivery Policy</a> and{" "}
@@ -68,7 +75,7 @@ export default function TermsPage() {
         </P>
       </Section>
 
-      <Section title="7. Platform fees & plans">
+      <Section title="8. Platform fees & plans">
         <P>
           Some features are offered on paid subscription plans. Fees, inclusions, and billing cycles
           are shown at the point of purchase. Subscription fees are non-refundable except where
@@ -76,7 +83,7 @@ export default function TermsPage() {
         </P>
       </Section>
 
-      <Section title="8. Intellectual property">
+      <Section title="9. Intellectual property">
         <P>
           The Frito platform, its software, branding, and content (excluding Your Content) are owned
           by us or our licensors and are protected by law. We grant you a limited, non-exclusive,
@@ -84,7 +91,7 @@ export default function TermsPage() {
         </P>
       </Section>
 
-      <Section title="9. Disclaimers & limitation of liability">
+      <Section title="10. Disclaimers & limitation of liability">
         <P>
           The platform is provided &ldquo;as is&rdquo; without warranties of any kind. To the maximum extent
           permitted by law, Frito is not liable for any indirect, incidental, or consequential
@@ -93,28 +100,28 @@ export default function TermsPage() {
         </P>
       </Section>
 
-      <Section title="10. Indemnity">
+      <Section title="11. Indemnity">
         <P>
           You agree to indemnify and hold Frito harmless from claims arising out of Your Content, your
           products, or your breach of these Terms.
         </P>
       </Section>
 
-      <Section title="11. Termination">
+      <Section title="12. Termination">
         <P>
           You may stop using Frito at any time. We may suspend or terminate access for breach of these
           Terms or misuse of the platform.
         </P>
       </Section>
 
-      <Section title="12. Governing law">
+      <Section title="13. Governing law">
         <P>
           These Terms are governed by the laws of India. Courts at Hyderabad, India shall have
           exclusive jurisdiction.
         </P>
       </Section>
 
-      <Section title="13. Changes & contact">
+      <Section title="14. Changes & contact">
         <P>
           We may update these Terms from time to time; material changes will be posted on this page.
           Questions? Contact us at l.ankur89@gmail.com or via our{" "}

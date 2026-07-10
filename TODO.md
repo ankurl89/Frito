@@ -4,6 +4,22 @@ Running list of follow-ups that aren't blocking but shouldn't be lost.
 
 ## Open
 
+- [ ] **Payouts — CA/legal review of the merchant-of-record structure (BLOCKS real merchant money).**
+  Decision made (2026-06-26): Frito operates as **Merchant of Record** (Redbubble/Spring model) —
+  Frito is the seller; founders earn a profit share paid from their earnings balance. Phase 1
+  (derived earnings ledger + payout details w/ PAN + manual payouts desk in Mission Control) is BUILT.
+  Before paying real money, a CA must review:
+  1. GST treatment — as MoR, Frito invoices the full sale value, not just its fees.
+  2. TDS on founder payouts — 194-O vs 194-R vs 194-H characterisation.
+  3. Terms §5–6 wording (earnings/profit-share language drafted; needs professional sign-off).
+  4. Payout cycle — currently "periodic"; decide weekly vs monthly + minimum threshold.
+  Context: RBI PA Directions 2025 rule out holding seller funds without a licence (why MoR),
+  and marketplace sellers of goods need GST regardless of turnover (why not Razorpay Route
+  for hobbyist founders). Route remains an option for a future registered-business tier.
+
+- [ ] **Payouts — Phase 3: automate transfers via a payout rail (e.g. RazorpayX)** once manual
+  runs have validated the ledger. Requires migration `db/migrations/002_payouts.sql` to be applied.
+
 - [ ] **Set up dedicated admin email accounts for Mission Control (separation of identity).**
   - Why: today `l.ankur89@gmail.com` is **both** a founder/storefront account **and** the
     super-admin. The staff login is separate, but the identity is shared. Using dedicated

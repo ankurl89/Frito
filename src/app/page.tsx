@@ -577,7 +577,7 @@ function FAQ() {
     { q: "Do I need Shopify experience?", a: "No. Frito gives you a hosted storefront out of the box. Shopify export is available as an upgrade." },
     { q: "Can I use my own designs?", a: "Yes. You can upload your own artwork or let AI generate designs from your brand brief." },
     { q: "How does fulfillment work?", a: "Orders automatically route to our production network. They print, pack, and ship directly to your customer — you never touch inventory." },
-    { q: "When do I get paid?", a: "Profits are settled weekly to your bank account after deducting production and platform fees." },
+    { q: "When do I get paid?", a: "Every sale's profit — your price minus production and platform fees — accrues to your earnings balance automatically. Add your bank details once in the dashboard, and your available balance is paid out to your bank account on a regular payout cycle, after a short buffer for returns." },
     { q: "Can I cancel my plan? Are subscriptions refundable?", a: "Yes — cancel anytime from your dashboard and keep access until the end of your billing period. Subscription fees are non-refundable except where required by law. Customer order refunds follow your store's refund policy." },
     { q: "Can I sell internationally?", a: "International shipping is on our roadmap. Currently we support all of India with Delhivery, Bluedart, and Xpressbees." },
     { q: "What if I get stuck?", a: "Frito is fully self-serve, but you're never on your own. Every account includes the Founder Playbook — step-by-step guides on selling, social content, and ads — right inside your dashboard, plus email support." },

@@ -7,7 +7,7 @@ import { ROLE_META, hasPermission, Permission } from "@/lib/mission-control/rbac
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, ShoppingCart, Truck, Users, UserCircle,
+  LayoutDashboard, ShoppingCart, Truck, Users, UserCircle, Landmark,
   DollarSign, Boxes, ShieldAlert, ScrollText, Bot, ChevronLeft, LogOut,
 } from "lucide-react";
 
@@ -17,6 +17,7 @@ const NAV: { label: string; href: string; icon: React.ElementType; perm: Permiss
   { label: "Fulfillment",  href: "/mission-control/fulfillment",  icon: Truck,           perm: "view_fulfillment" },
   { label: "Merchants",    href: "/mission-control/merchants",    icon: Users,           perm: "view_merchants" },
   { label: "Customers",    href: "/mission-control/customers",    icon: UserCircle,      perm: "view_customers" },
+  { label: "Payouts",      href: "/mission-control/payouts",      icon: Landmark,        perm: "view_payouts" },
   { label: "Audit",        href: "/mission-control/audit",        icon: ScrollText,      perm: "view_audit" },
   { label: "Pricing",      href: "/mission-control/pricing",      icon: DollarSign,      perm: "view_pricing", soon: true },
   { label: "Inventory",    href: "/mission-control/inventory",    icon: Boxes,           perm: "view_inventory", soon: true },

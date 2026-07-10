@@ -27,6 +27,8 @@ export type Permission =
   | "view_merchants" | "suspend_merchant" | "impersonate_merchant"
   // Customers
   | "view_customers"
+  // Payouts
+  | "view_payouts" | "manage_payouts"
   // Pricing / Inventory
   | "view_pricing" | "view_inventory"
   // Audit
@@ -39,7 +41,7 @@ const ALL: Permission[] = [
   "view_orders", "retry_order", "cancel_order", "refund_order",
   "view_fulfillment", "manage_provider", "retry_job",
   "view_merchants", "suspend_merchant", "impersonate_merchant",
-  "view_customers", "view_pricing", "view_inventory",
+  "view_customers", "view_payouts", "manage_payouts", "view_pricing", "view_inventory",
   "view_audit", "manage_staff",
 ];
 
@@ -50,7 +52,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
     "view_executive",
     "view_orders", "retry_order", "cancel_order",
     "view_fulfillment", "manage_provider", "retry_job",
-    "view_merchants", "view_customers", "view_inventory", "view_audit",
+    "view_merchants", "view_customers", "view_payouts", "view_inventory", "view_audit",
   ],
 
   support_agent: [
@@ -61,6 +63,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
   finance_manager: [
     "view_executive",
     "view_orders", "refund_order",
+    "view_payouts", "manage_payouts",
     "view_pricing", "view_merchants", "view_audit",
   ],
 
@@ -70,7 +73,7 @@ export const ROLE_PERMISSIONS: Record<StaffRole, Permission[]> = {
 
   read_only: [
     "view_executive", "view_orders", "view_fulfillment",
-    "view_merchants", "view_customers", "view_pricing", "view_inventory", "view_audit",
+    "view_merchants", "view_customers", "view_payouts", "view_pricing", "view_inventory", "view_audit",
   ],
 };
 
