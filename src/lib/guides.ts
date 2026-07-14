@@ -89,11 +89,11 @@ export const GUIDES: Guide[] = [
       {
         heading: "Know your true cost first",
         body: [
-          "Your cost per item = blank garment + printing + shipping. For a tee that's roughly ₹250 garment + ₹100 print + shipping. Always price off the all-in number, not just the blank.",
+          "Your production cost per item is shown right in the product editor — and it already includes the garment and printing, so there are no surprise costs on top. Shipping is charged to your customer at checkout.",
         ],
         bullets: [
-          "Tee all-in cost: ~₹350–400",
-          "Hoodie all-in cost: ~₹600–700",
+          "Tees: ₹449–499 per item, all-in",
+          "Hoodie: ₹699 · Sweatshirt: ₹599, all-in",
           "Never set a sell price below cost × 2 unless it's a deliberate loss-leader",
         ],
       },
@@ -103,9 +103,9 @@ export const GUIDES: Guide[] = [
           "Aim for at least a 2.5–3× markup. That margin isn't greed — it pays for the ads, discounts, and the occasional refund that growth requires. A brand with thin margins can't afford to market itself.",
         ],
         bullets: [
-          "Premium tee: ₹899–1,199",
+          "Premium tee: ₹999–1,299",
           "Hoodie: ₹1,799–2,299",
-          "Sweatshirt: ₹1,299–1,699",
+          "Sweatshirt: ₹1,499–1,799",
         ],
         tip: "Charm pricing works: ₹999 reads far cheaper than ₹1,000. End prices in 9.",
       },

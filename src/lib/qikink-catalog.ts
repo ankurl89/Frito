@@ -47,8 +47,19 @@ export interface ProductTemplate {
 }
 
 // All four V1 colors are stocked on every chosen Qikink garment.
-// base_price = Qikink garment base cost (INR). Print + shipping are billed on
-// top at fulfillment; treat margins as garment-only until those are wired.
+//
+// base_price = the founder-facing PRODUCTION COST per unit (INR):
+//   supplier garment cost + DTG print + Frito's platform margin.
+// Founder profit = sell_price − base_price; Frito's per-unit take =
+// base_price − what the supplier actually bills us. Customer-paid shipping
+// (₹49 at checkout) approximately offsets the courier charge.
+//
+// Cost model (supplier print cost is an ESTIMATE until trued up against the
+// first live supplier invoice — see TODO.md):
+//   QK-001 Oversized Tee : 265 garment + ~120 print + 64 margin = 449
+//   QK-011 Supima Tee    : 300 garment + ~120 print + 79 margin = 499
+//   QK-002 Hoodie        : 490 garment + ~130 print + 79 margin = 699
+//   QK-012 Sweatshirt    : 390 garment + ~130 print + 79 margin = 599
 const COLORS_ALL: ColorName[] = ["Black", "White", "Navy", "Maroon"];
 
 // Reusable placement sets (normalised on the square 1024 templates).
@@ -75,7 +86,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-001",
     name: "Oversized T-Shirt",
     category: "Apparel",
-    base_price: 265,
+    base_price: 449,
     material: "240 GSM combed cotton",
     description: "Heavyweight oversized fit. Drop shoulder. Pre-shrunk.",
     difficulty: "Easy", popularity: "High", margin_pct: 70, production_days: "3–5 days",
@@ -91,7 +102,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-011",
     name: "Classic Unisex T-Shirt",
     category: "Apparel",
-    base_price: 300,
+    base_price: 499,
     material: "Premium Supima cotton",
     description: "Regular unisex fit in premium Supima cotton. The easiest first product.",
     difficulty: "Easy", popularity: "High", margin_pct: 72, production_days: "3–5 days",
@@ -107,7 +118,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-002",
     name: "Hoodie",
     category: "Apparel",
-    base_price: 490,
+    base_price: 699,
     material: "320 GSM fleece-lined cotton blend",
     description: "Premium pullover hoodie. Kangaroo pocket. Heavyweight fleece.",
     difficulty: "Medium", popularity: "High", margin_pct: 65, production_days: "4–6 days",
@@ -123,7 +134,7 @@ export const QIKINK_CATALOG: ProductTemplate[] = [
     id: "QK-012",
     name: "Sweatshirt",
     category: "Apparel",
-    base_price: 390,
+    base_price: 599,
     material: "300 GSM fleece-lined cotton blend",
     description: "Classic crewneck sweatshirt. Cozy, structured, premium feel.",
     difficulty: "Medium", popularity: "Medium", margin_pct: 66, production_days: "4–6 days",
@@ -158,8 +169,11 @@ export function placementTarget(template: ProductTemplate, key?: string): { url:
 }
 
 export function suggestSellPrice(baseCost: number, priceTier: string): number {
-  const m: Record<string, number> = { budget: 2.0, mid: 2.8, premium: 3.5, luxury: 4.5 };
-  const mult = m[priceTier] || 2.8;
+  // Calibrated for ALL-IN base costs (garment + print + platform margin) —
+  // e.g. premium tee 449 → ₹1,150, hoodie 699 → ₹1,800; keeps suggestions in
+  // the ranges the Founder Playbook teaches.
+  const m: Record<string, number> = { budget: 1.8, mid: 2.2, premium: 2.6, luxury: 3.2 };
+  const mult = m[priceTier] || 2.2;
   return Math.ceil((baseCost * mult) / 50) * 50;
 }
 

@@ -41,6 +41,13 @@ Running list of follow-ups that aren't blocking but shouldn't be lost.
   Qikink received is the full-resolution production file (the bg-removal step's output resolution
   is unconfirmed) and that the printed size matches the mockup (width/height_inches now sent).
 
+- [ ] **True-up the unit cost model against the first live Qikink invoice.** base_price now =
+  garment + estimated DTG print + platform margin (449/499/699/599 — see the cost model comment
+  in `src/lib/qikink-catalog.ts`). The print estimates (~₹120–130) and the ₹49 customer shipping
+  vs real courier charge are ESTIMATES — verify both on the first real invoice and tune the four
+  numbers in one place. Also decide whether the two legacy non-V1 test products (Tote Bags,
+  QK-004/QK-010) should be archived.
+
 - [ ] **Set up dedicated admin email accounts for Mission Control (separation of identity).**
   - Why: today `l.ankur89@gmail.com` is **both** a founder/storefront account **and** the
     super-admin. The staff login is separate, but the identity is shared. Using dedicated

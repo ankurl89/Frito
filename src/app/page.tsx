@@ -394,11 +394,14 @@ function BrandWall() {
 
 /* ── CATALOG ── */
 function Catalog() {
+  // Mirrors the real catalog (src/lib/qikink-catalog.ts): cost = all-in
+  // production cost (garment + print); sell = typical premium price; margin
+  // = profit / sell. Keep in sync when the catalog changes.
   const products = [
-    { category: "Apparel", name: "Oversized T-Shirt", cost: 349, sell: 999, margin: 65, img: `${TPL_IMG}/tshirt.png` },
-    { category: "Apparel", name: "Classic Unisex T-Shirt", cost: 299, sell: 799, margin: 63, img: `${TPL_IMG}/tshirt.png` },
-    { category: "Apparel", name: "Hoodie", cost: 649, sell: 1899, margin: 66, img: `${TPL_IMG}/hoodie.png` },
-    { category: "Apparel", name: "Sweatshirt", cost: 549, sell: 1499, margin: 63, img: `${TPL_IMG}/sweatshirt.png` },
+    { category: "Apparel", name: "Oversized T-Shirt", cost: 449, sell: 999, margin: 55, img: `${TPL_IMG}/tshirt.png` },
+    { category: "Apparel", name: "Classic Unisex T-Shirt", cost: 499, sell: 1199, margin: 58, img: `${TPL_IMG}/tshirt.png` },
+    { category: "Apparel", name: "Hoodie", cost: 699, sell: 1799, margin: 61, img: `${TPL_IMG}/hoodie.png` },
+    { category: "Apparel", name: "Sweatshirt", cost: 599, sell: 1499, margin: 60, img: `${TPL_IMG}/sweatshirt.png` },
   ];
 
   return (
@@ -455,8 +458,9 @@ function Catalog() {
 /* ── REVENUE CALCULATOR ── */
 function RevenueCalculator() {
   const [units, setUnits] = useState(150);
-  const [price, setPrice] = useState(799);
-  const avgCost = 280;
+  const [price, setPrice] = useState(999);
+  // Blended all-in production cost across the catalog (tees→hoodies).
+  const avgCost = 550;
   const revenue = units * price;
   const fulfillment = units * avgCost;
   const profit = revenue - fulfillment;
@@ -483,7 +487,7 @@ function RevenueCalculator() {
                 <span className="text-sm text-zinc-600">Average selling price</span>
                 <span className="font-black text-zinc-900">₹{price}</span>
               </div>
-              <input type="range" min={199} max={2999} step={50} value={price} onChange={e => setPrice(Number(e.target.value))}
+              <input type="range" min={599} max={2999} step={50} value={price} onChange={e => setPrice(Number(e.target.value))}
                 className="w-full accent-violet-600" />
             </div>
           </div>
@@ -563,6 +567,7 @@ function Pricing() {
             </div>
           ))}
         </div>
+        <p className="text-center text-xs text-zinc-400 mt-6">Prices in INR, exclusive of 18% GST.</p>
       </div>
     </section>
   );
